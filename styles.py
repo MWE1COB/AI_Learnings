@@ -293,6 +293,61 @@ QFrame#udemy_card:hover {
     border-color: #1a73e8;
 }
 
+/* ── Portal Tiles (ESS-style) ───────────────────────────────── */
+QFrame#portal_tile {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+}
+QFrame#portal_tile:hover {
+    border-color: #1a73e8;
+    background-color: #e8f0fe;
+}
+
+/* ── Quick Access Buttons ───────────────────────────────────── */
+QPushButton#quick_access_btn {
+    background-color: #e8f0fe;
+    color: #1a237e;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid #c5cae9;
+    border-radius: 8px;
+}
+QPushButton#quick_access_btn:hover {
+    background-color: #c5cae9;
+    border-color: #1a237e;
+}
+
+/* ── Header Logout Button ───────────────────────────────────── */
+QPushButton#header_logout {
+    background-color: transparent;
+    color: #ef9a9a;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid #ef9a9a;
+    border-radius: 4px;
+}
+QPushButton#header_logout:hover {
+    background-color: #b71c1c;
+    color: white;
+    border-color: #b71c1c;
+}
+
+/* ── Settings Gear Button ───────────────────────────────────── */
+QPushButton#settings_btn {
+    background-color: transparent;
+    color: white;
+    font-size: 24px;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#settings_btn:hover {
+    background-color: #3949ab;
+}
+
 /* ── Hero Buttons ───────────────────────────────────────────── */
 QPushButton#hero_btn_primary {
     background-color: white;

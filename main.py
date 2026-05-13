@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QFrame, QStackedWidget, QMessageBox,
     QGridLayout, QRadioButton, QButtonGroup, QScrollArea, QTableWidget,
     QTableWidgetItem, QHeaderView, QComboBox, QProgressBar, QSpacerItem,
-    QSizePolicy, QTabWidget, QDialog, QFormLayout, QTextEdit,
+    QSizePolicy, QTabWidget, QDialog, QFormLayout, QTextEdit, QMenu, QAction,
 )
 from PyQt5.QtCore import Qt, QSize, QTimer, QRectF
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
@@ -185,8 +185,27 @@ class RegisterDialog(QDialog):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  DASHBOARD SCREEN (Udemy-style)
+#  DASHBOARD SCREEN
 # ═══════════════════════════════════════════════════════════════════
+
+# Icon colors for course tiles
+TILE_COLORS = [
+    "#1565c0", "#2e7d32", "#e65100", "#6a1b9a",
+    "#00838f", "#c62828", "#4527a0", "#00695c",
+]
+
+TILE_ICONS = {
+    "C Programming": "C",
+    "Python": "🐍",
+    "Java": "☕",
+    "JavaScript": "JS",
+    "SQL": "🗄️",
+    "Data Structures": "🏗️",
+    "Algorithms": "⚙️",
+    "HTML/CSS": "🌐",
+}
+
+
 class DashboardScreen(QWidget):
     def __init__(self, user, navigate_to):
         super().__init__()
@@ -195,7 +214,6 @@ class DashboardScreen(QWidget):
         self._build_ui()
 
     def _build_ui(self):
-        # Scrollable content
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -205,146 +223,78 @@ class DashboardScreen(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # ── Hero Banner ─────────────────────────────────────────
-        hero = QFrame()
-        hero.setStyleSheet("""
+        # ── Welcome Strip ───────────────────────────────────────
+        welcome_strip = QFrame()
+        welcome_strip.setStyleSheet("""
             QFrame {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #1a237e, stop:0.5 #283593, stop:1 #3949ab);
-                border-radius: 0px;
-                padding: 40px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #1a237e, stop:1 #3949ab);
             }
         """)
-        hero_layout = QVBoxLayout(hero)
-        hero_layout.setContentsMargins(60, 40, 60, 40)
-        hero_layout.setSpacing(12)
+        ws_layout = QHBoxLayout(welcome_strip)
+        ws_layout.setContentsMargins(40, 20, 40, 20)
 
-        welcome = QLabel(f"Welcome back, {self.user['full_name']}!")
-        welcome.setStyleSheet("color: white; font-size: 28px; font-weight: bold; background: transparent;")
+        welcome = QLabel(f"Welcome, {self.user['full_name']}")
+        welcome.setStyleSheet("color: white; font-size: 22px; font-weight: bold; background: transparent;")
 
-        subtitle = QLabel("Continue your learning journey. Pick up where you left off or explore new topics.")
-        subtitle.setStyleSheet("color: #b3c7ff; font-size: 15px; background: transparent;")
-        subtitle.setWordWrap(True)
+        role_text = "Administrator" if self.user["is_admin"] else "Learner"
+        role_badge = QLabel(f"  {role_text}  ")
+        role_badge.setStyleSheet("""
+            color: white; font-size: 11px; font-weight: bold;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 10px; padding: 4px 12px;
+        """)
 
-        hero_btn_layout = QHBoxLayout()
-        hero_btn_layout.setSpacing(12)
+        ws_layout.addWidget(welcome)
+        ws_layout.addWidget(role_badge)
+        ws_layout.addStretch()
+        layout.addWidget(welcome_strip)
 
-        explore_btn = QPushButton("Explore Topics")
-        explore_btn.setObjectName("hero_btn_primary")
+        # ── My Learnings Section ────────────────────────────────
+        learnings_widget = QWidget()
+        learnings_widget.setStyleSheet("background-color: #f7f9fa;")
+        learnings_outer = QVBoxLayout(learnings_widget)
+        learnings_outer.setContentsMargins(40, 30, 40, 30)
+        learnings_outer.setSpacing(16)
+
+        # Section header with icon
+        header_row = QHBoxLayout()
+        learnings_title = QLabel("📖 My Learnings")
+        learnings_title.setStyleSheet("font-size: 22px; font-weight: bold; color: #1a237e;")
+        header_row.addWidget(learnings_title)
+        header_row.addStretch()
+
+        explore_btn = QPushButton("+ Explore Topics")
+        explore_btn.setObjectName("primary")
         explore_btn.setCursor(Qt.PointingHandCursor)
         explore_btn.clicked.connect(lambda: self.navigate_to("topics"))
+        header_row.addWidget(explore_btn)
 
-        profile_btn = QPushButton("My Progress")
-        profile_btn.setObjectName("hero_btn_secondary")
-        profile_btn.setCursor(Qt.PointingHandCursor)
-        profile_btn.clicked.connect(lambda: self.navigate_to("profile"))
+        learnings_outer.addLayout(header_row)
 
-        hero_btn_layout.addWidget(explore_btn)
-        hero_btn_layout.addWidget(profile_btn)
-        hero_btn_layout.addStretch()
-
-        hero_layout.addWidget(welcome)
-        hero_layout.addWidget(subtitle)
-        hero_layout.addSpacing(16)
-        hero_layout.addLayout(hero_btn_layout)
-
-        layout.addWidget(hero)
-
-        # ── Quick Actions Section ───────────────────────────────
-        section_widget = QWidget()
-        section_widget.setStyleSheet("background-color: white;")
-        section_layout = QVBoxLayout(section_widget)
-        section_layout.setContentsMargins(60, 30, 60, 30)
-        section_layout.setSpacing(20)
-
-        section_title = QLabel("Quick Actions")
-        section_title.setStyleSheet("font-size: 22px; font-weight: bold; color: #1c1d1f;")
-        section_layout.addWidget(section_title)
-
-        cards_layout = QHBoxLayout()
-        cards_layout.setSpacing(20)
-
-        actions = [
-            ("📚", "Browse Topics", "Explore learning topics and take quizzes", "topics"),
-            ("👤", "My Profile", "View your skills and track progress", "profile"),
-        ]
-        if self.user["is_admin"]:
-            actions.append(("⚙️", "Admin Panel", "Manage users and platform settings", "admin"))
-
-        for icon, title, desc, target in actions:
-            card = self._make_udemy_card(icon, title, desc, target)
-            cards_layout.addWidget(card)
-
-        # Add a spacer if few cards
-        if len(actions) < 3:
-            cards_layout.addStretch()
-
-        section_layout.addLayout(cards_layout)
-        layout.addWidget(section_widget)
-
-        # ── Skills Progress Section ─────────────────────────────
-        skills_widget = QWidget()
-        skills_widget.setStyleSheet("background-color: #f7f9fa;")
-        skills_layout_outer = QVBoxLayout(skills_widget)
-        skills_layout_outer.setContentsMargins(60, 30, 60, 30)
-        skills_layout_outer.setSpacing(16)
-
-        skills_header = QHBoxLayout()
-        skills_title = QLabel("📊 Your Learning Progress")
-        skills_title.setStyleSheet("font-size: 22px; font-weight: bold; color: #1c1d1f;")
-        skills_header.addWidget(skills_title)
-        skills_header.addStretch()
-        skills_layout_outer.addLayout(skills_header)
+        # Separator
+        sep = QFrame()
+        sep.setFixedHeight(2)
+        sep.setStyleSheet("background-color: #e0e0e0;")
+        learnings_outer.addWidget(sep)
 
         self.skills_layout = QVBoxLayout()
-        skills_layout_outer.addLayout(self.skills_layout)
-        skills_layout_outer.addStretch()
+        self.skills_layout.setSpacing(12)
+        learnings_outer.addLayout(self.skills_layout)
+        learnings_outer.addStretch()
 
-        layout.addWidget(skills_widget)
+        layout.addWidget(learnings_widget)
         layout.addStretch()
 
         scroll.setWidget(content)
 
-        # Main layout wrapping the scroll area
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(scroll)
 
         self._refresh_skills()
 
-    def _make_udemy_card(self, icon, title, desc, target):
-        card = QFrame()
-        card.setObjectName("udemy_card")
-        card.setMinimumHeight(160)
-        card.setMinimumWidth(250)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(24, 24, 24, 24)
-        card_layout.setSpacing(8)
-
-        icon_label = QLabel(icon)
-        icon_label.setStyleSheet("font-size: 32px; background: transparent;")
-
-        t = QLabel(title)
-        t.setStyleSheet("font-size: 16px; font-weight: bold; color: #1c1d1f;")
-
-        d = QLabel(desc)
-        d.setStyleSheet("font-size: 13px; color: #6a6f73;")
-        d.setWordWrap(True)
-
-        btn = QPushButton("Start →")
-        btn.setObjectName("primary")
-        btn.setCursor(Qt.PointingHandCursor)
-        btn.clicked.connect(lambda checked, t=target: self.navigate_to(t))
-
-        card_layout.addWidget(icon_label)
-        card_layout.addWidget(t)
-        card_layout.addWidget(d)
-        card_layout.addStretch()
-        card_layout.addWidget(btn)
-        return card
-
     def _refresh_skills(self):
-        # Clear existing
         while self.skills_layout.count():
             child = self.skills_layout.takeAt(0)
             if child.widget():
@@ -352,45 +302,86 @@ class DashboardScreen(QWidget):
 
         skills = db.get_user_skills(self.user["id"])
         if not skills:
-            no_skills = QLabel("No skills added yet. Browse topics to start learning!")
-            no_skills.setObjectName("subtitle")
-            self.skills_layout.addWidget(no_skills)
+            empty_card = QFrame()
+            empty_card.setObjectName("card")
+            empty_card.setMinimumHeight(120)
+            empty_layout = QVBoxLayout(empty_card)
+            empty_layout.setAlignment(Qt.AlignCenter)
+
+            empty_icon = QLabel("📚")
+            empty_icon.setAlignment(Qt.AlignCenter)
+            empty_icon.setStyleSheet("font-size: 36px;")
+
+            empty_text = QLabel("No learnings yet. Explore topics to start your journey!")
+            empty_text.setAlignment(Qt.AlignCenter)
+            empty_text.setStyleSheet("font-size: 14px; color: #666;")
+
+            empty_layout.addWidget(empty_icon)
+            empty_layout.addWidget(empty_text)
+            self.skills_layout.addWidget(empty_card)
             return
 
         for skill in skills:
-            row = QFrame()
-            row.setObjectName("card")
-            row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(16, 12, 16, 12)
+            card = QFrame()
+            card.setObjectName("card")
+            card.setMinimumHeight(80)
+            card_layout = QHBoxLayout(card)
+            card_layout.setContentsMargins(20, 16, 20, 16)
+            card_layout.setSpacing(16)
 
-            topic_label = QLabel(f"  {skill['topic']}")
-            topic_label.setFont(QFont("Segoe UI", 13, QFont.Bold))
+            # Topic icon
+            icon_text = TILE_ICONS.get(skill['topic'], "📘")
+            icon_label = QLabel(icon_text)
+            icon_label.setFixedSize(44, 44)
+            icon_label.setAlignment(Qt.AlignCenter)
+            idx = db.TOPICS.index(skill['topic']) if skill['topic'] in db.TOPICS else 0
+            color = TILE_COLORS[idx % len(TILE_COLORS)]
+            icon_label.setStyleSheet(f"""
+                font-size: 20px; font-weight: bold; color: white;
+                background-color: {color}; border-radius: 22px;
+            """)
+
+            # Topic info
+            info_layout = QVBoxLayout()
+            info_layout.setSpacing(4)
+
+            topic_label = QLabel(skill['topic'])
+            topic_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #1c1d1f;")
 
             level_name = db.SKILL_LEVELS.get(skill["self_rated_level"], "Unknown")
             validated = skill["validated_level"]
             validated_name = db.SKILL_LEVELS.get(validated, "None")
+            detail_label = QLabel(f"Self-rated: {level_name}  •  Validated: {validated_name}")
+            detail_label.setStyleSheet("font-size: 12px; color: #6a6f73;")
 
+            info_layout.addWidget(topic_label)
+            info_layout.addWidget(detail_label)
+
+            # Progress bar
             progress = QProgressBar()
             progress.setMaximum(4)
             progress.setValue(validated)
-            progress.setFormat(f"Validated: {validated_name}")
-            progress.setMinimumWidth(200)
+            progress.setFormat(f"{int(validated/4*100)}%")
+            progress.setFixedWidth(180)
+            progress.setFixedHeight(20)
 
+            # Status
             status_label = QLabel()
             if validated >= skill["self_rated_level"]:
-                status_label.setText("  ✅ Validated")
-                status_label.setStyleSheet("color: #2e7d32; font-weight: bold;")
+                status_label.setText("✅ Validated")
+                status_label.setStyleSheet("color: #2e7d32; font-weight: bold; font-size: 13px;")
             else:
                 next_level = validated + 1
                 next_name = db.SKILL_LEVELS.get(next_level, "")
-                status_label.setText(f"  ⏳ Next: {next_name}")
-                status_label.setStyleSheet("color: #e65100; font-weight: bold;")
+                status_label.setText(f"⏳ Next: {next_name}")
+                status_label.setStyleSheet("color: #e65100; font-weight: bold; font-size: 13px;")
 
-            row_layout.addWidget(topic_label)
-            row_layout.addStretch()
-            row_layout.addWidget(progress)
-            row_layout.addWidget(status_label)
-            self.skills_layout.addWidget(row)
+            card_layout.addWidget(icon_label)
+            card_layout.addLayout(info_layout)
+            card_layout.addStretch()
+            card_layout.addWidget(progress)
+            card_layout.addWidget(status_label)
+            self.skills_layout.addWidget(card)
 
     def refresh(self):
         self._refresh_skills()
@@ -1595,11 +1586,17 @@ class MainWindow(QMainWindow):
         self.header_layout = QHBoxLayout(self.header_frame)
         self.header_layout.setContentsMargins(20, 8, 20, 8)
 
-        header_title = QLabel("🎓 AI Learning Platform")
-        header_title.setStyleSheet("color: white; font-size: 18px; font-weight: bold; background: transparent;")
-        header_title.setCursor(Qt.PointingHandCursor)
-        header_title.mousePressEvent = lambda e: self._navigate_to("dashboard") if self.user else None
-        self.header_layout.addWidget(header_title)
+        # Bosch logo on the left
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image", "bosch_logo.png")
+        logo_label = QLabel()
+        logo_label.setStyleSheet("background: transparent;")
+        logo_label.setAttribute(Qt.WA_TranslucentBackground)
+        logo_pixmap = QPixmap(logo_path)
+        if not logo_pixmap.isNull():
+            logo_label.setPixmap(logo_pixmap.scaled(120, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        logo_label.setCursor(Qt.PointingHandCursor)
+        logo_label.mousePressEvent = lambda e: self._navigate_to("dashboard") if self.user else None
+        self.header_layout.addWidget(logo_label)
 
         # Navigation buttons (hidden until login)
         self.nav_widget = QWidget()
@@ -1612,15 +1609,13 @@ class MainWindow(QMainWindow):
 
         self.header_layout.addStretch()
 
-        # Bosch logo on the right
-        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image", "bosch_logo.png")
-        logo_label = QLabel()
-        logo_label.setStyleSheet("background: transparent;")
-        logo_label.setAttribute(Qt.WA_TranslucentBackground)
-        logo_pixmap = QPixmap(logo_path)
-        if not logo_pixmap.isNull():
-            logo_label.setPixmap(logo_pixmap.scaled(120, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        self.header_layout.addWidget(logo_label)
+        # Settings gear button on the right (hidden until login)
+        self.settings_btn = QPushButton("⚙")
+        self.settings_btn.setObjectName("settings_btn")
+        self.settings_btn.setCursor(Qt.PointingHandCursor)
+        self.settings_btn.clicked.connect(self._show_settings_menu)
+        self.settings_btn.hide()
+        self.header_layout.addWidget(self.settings_btn)
 
         self.outer_layout.addWidget(self.header_frame)
 
@@ -1637,7 +1632,53 @@ class MainWindow(QMainWindow):
         self.user = user
         self._build_nav_bar()
         self.nav_widget.show()
+        self.settings_btn.show()
         self._navigate_to("dashboard")
+
+    def _show_settings_menu(self):
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 6px 0px;
+            }
+            QMenu::item {
+                padding: 10px 30px;
+                font-size: 13px;
+                color: #333;
+            }
+            QMenu::item:hover {
+                background-color: #e8f0fe;
+                color: #1a237e;
+            }
+            QMenu::separator {
+                height: 1px;
+                background-color: #e0e0e0;
+                margin: 4px 12px;
+            }
+        """)
+
+        profile_action = QAction("👤  Profile", self)
+        profile_action.triggered.connect(lambda: self._navigate_to("profile"))
+        menu.addAction(profile_action)
+
+        if self.user and self.user["is_admin"]:
+            admin_action = QAction("🛠️  Admin", self)
+            admin_action.triggered.connect(lambda: self._navigate_to("admin"))
+            menu.addAction(admin_action)
+
+        menu.addSeparator()
+
+        logout_action = QAction("🚪  Logout", self)
+        logout_action.triggered.connect(self._logout)
+        menu.addAction(logout_action)
+
+        # Show below the settings button
+        btn_rect = self.settings_btn.rect()
+        global_pos = self.settings_btn.mapToGlobal(btn_rect.bottomRight())
+        menu.exec_(global_pos)
 
     def _build_nav_bar(self):
         # Clear existing nav buttons
@@ -1650,10 +1691,7 @@ class MainWindow(QMainWindow):
         nav_items = [
             ("dashboard", "🏠 Home"),
             ("topics", "📚 Topics"),
-            ("profile", "👤 Profile"),
         ]
-        if self.user["is_admin"]:
-            nav_items.append(("admin", "⚙️ Admin"))
 
         for key, text in nav_items:
             btn = QPushButton(text)
@@ -1663,12 +1701,7 @@ class MainWindow(QMainWindow):
             self.nav_buttons[key] = btn
             self.nav_hlayout.addWidget(btn)
 
-        # Logout button
-        logout_btn = QPushButton("🚪 Logout")
-        logout_btn.setObjectName("nav_logout_btn")
-        logout_btn.setCursor(Qt.PointingHandCursor)
-        logout_btn.clicked.connect(self._logout)
-        self.nav_hlayout.addWidget(logout_btn)
+
 
     def _navigate_to(self, page_name):
         self.current_page = page_name
@@ -1731,6 +1764,7 @@ class MainWindow(QMainWindow):
     def _logout(self):
         self.user = None
         self.nav_widget.hide()
+        self.settings_btn.hide()
         while self.stack.count() > 1:
             w = self.stack.widget(1)
             self.stack.removeWidget(w)
