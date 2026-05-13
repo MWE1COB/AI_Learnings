@@ -238,4 +238,84 @@ QFrame#sidebar QPushButton#active_nav {
 QFrame#sidebar QLabel {
     color: white;
 }
+
+/* ── App Header ─────────────────────────────────────────────── */
+QFrame#app_header {
+    background-color: #1a237e;
+    border-bottom: 2px solid #3949ab;
+}
+
+/* ── Top Nav Buttons ────────────────────────────────────────── */
+QPushButton#nav_btn {
+    background-color: transparent;
+    color: #b0bec5;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#nav_btn:hover {
+    background-color: #3949ab;
+    color: white;
+}
+QPushButton#nav_btn_active {
+    background-color: #3949ab;
+    color: white;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    border-bottom: 2px solid #42a5f5;
+}
+QPushButton#nav_logout_btn {
+    background-color: transparent;
+    color: #ef9a9a;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#nav_logout_btn:hover {
+    background-color: #b71c1c;
+    color: white;
+}
+
+/* ── Udemy-style Cards ──────────────────────────────────────── */
+QFrame#udemy_card {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+QFrame#udemy_card:hover {
+    border-color: #1a73e8;
+}
+
+/* ── Hero Buttons ───────────────────────────────────────────── */
+QPushButton#hero_btn_primary {
+    background-color: white;
+    color: #1a237e;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 4px;
+    border: none;
+}
+QPushButton#hero_btn_primary:hover {
+    background-color: #e8eaf6;
+}
+QPushButton#hero_btn_secondary {
+    background-color: transparent;
+    color: white;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 4px;
+    border: 2px solid white;
+}
+QPushButton#hero_btn_secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
 """
