@@ -2,7 +2,7 @@
 
 MAIN_STYLE = """
 QMainWindow, QWidget {
-    background-color: #f0f2f5;
+    background-color: #f5f7fa;
     font-family: 'Segoe UI', Arial, sans-serif;
 }
 
@@ -214,7 +214,8 @@ QScrollBar::handle:vertical {
 
 /* ── Sidebar ────────────────────────────────────────────────── */
 QFrame#sidebar {
-    background-color: #1a237e;
+    background-color: #f7f9fa;
+    border-right: 1px solid #e0e0e0;
     border-radius: 0px;
 }
 QFrame#sidebar QPushButton {
@@ -237,6 +238,35 @@ QFrame#sidebar QPushButton#active_nav {
 }
 QFrame#sidebar QLabel {
     color: white;
+}
+
+/* ── Sidebar Buttons ────────────────────────────────────────── */
+QPushButton#sidebar_btn {
+    background-color: transparent;
+    color: #333;
+    text-align: left;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 0px;
+    border-left: 3px solid transparent;
+}
+QPushButton#sidebar_btn:hover {
+    background-color: #e8f0fe;
+    color: #1a237e;
+    border-left: 3px solid #c5cae9;
+}
+QPushButton#sidebar_btn_active {
+    background-color: #e8f0fe;
+    color: #1a237e;
+    text-align: left;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 0px;
+    border-left: 3px solid #1a237e;
 }
 
 /* ── App Header ─────────────────────────────────────────────── */
@@ -304,6 +334,17 @@ QFrame#portal_tile:hover {
     background-color: #e8f0fe;
 }
 
+/* ── Featured Cards ─────────────────────────────────────────── */
+QFrame#featured_card {
+    background-color: #f9fafb;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+}
+QFrame#featured_card:hover {
+    border-color: #1a237e;
+    background-color: #e8eaf6;
+}
+
 /* ── Quick Access Buttons ───────────────────────────────────── */
 QPushButton#quick_access_btn {
     background-color: #e8f0fe;
@@ -337,15 +378,16 @@ QPushButton#header_logout:hover {
 
 /* ── Settings Gear Button ───────────────────────────────────── */
 QPushButton#settings_btn {
-    background-color: transparent;
+    background-color: rgba(255, 255, 255, 0.15);
     color: white;
-    font-size: 24px;
-    padding: 4px 10px;
-    border: none;
-    border-radius: 4px;
+    font-size: 22px;
+    padding: 0px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
 }
 QPushButton#settings_btn:hover {
-    background-color: #3949ab;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* ── Hero Buttons ───────────────────────────────────────────── */
