@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt, QSize, QTimer, QRectF
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
 
 import database as db
-from quiz_engine import generate_quiz_with_ai, configure_gemini, GENAI_AVAILABLE, get_quiz_timer, PASS_PERCENTAGE
+from quiz_engine import generate_quiz_with_ai, configure_aoai, GENAI_AVAILABLE, get_quiz_timer, PASS_PERCENTAGE
 from styles import MAIN_STYLE
 
 
@@ -949,7 +949,7 @@ class QuizScreen(QWidget):
         QTimer.singleShot(100, self._generate_questions)
 
     def _generate_questions(self):
-        self.questions = generate_quiz_with_ai(self.topic, self.level, 10)
+        self.questions = generate_quiz_with_ai(self.topic, self.level, 20)
         self.progress_bar.setMaximum(len(self.questions))
         self.remaining_time = get_quiz_timer(self.level, self.questions)
         self.timer.start(1000)
@@ -1603,15 +1603,15 @@ class AdminPanel(QWidget):
         ai_title.setObjectName("section_title")
         ai_layout.addWidget(ai_title)
 
-        status = "✅ Available" if GENAI_AVAILABLE else "❌ Not installed (pip install google-generativeai)"
-        status_label = QLabel(f"Google Gemini SDK: {status}")
+        status = "✅ Available" if GENAI_AVAILABLE else "❌ Not installed (pip install openai)"
+        status_label = QLabel(f"Bosch AOAI Farm SDK: {status}")
         status_label.setStyleSheet("font-size: 13px;")
         ai_layout.addWidget(status_label)
 
         ai_layout.addSpacing(10)
         key_label = QLabel("API Key:")
         self.api_key_input = QLineEdit()
-        self.api_key_input.setPlaceholderText("Enter your Google Gemini API key")
+        self.api_key_input.setPlaceholderText("Enter your Bosch AOAI Farm API key")
         self.api_key_input.setEchoMode(QLineEdit.Password)
 
         save_key_btn = QPushButton("Save & Configure")
@@ -1628,8 +1628,9 @@ class AdminPanel(QWidget):
         ai_layout.addWidget(self.ai_msg)
 
         info = QLabel(
-            "ℹ️ Without a Gemini API key, the platform uses a built-in question bank.\n"
-            "With an API key, quiz questions are generated dynamically by AI for each attempt."
+            "ℹ️ Without an API key, the platform uses a built-in question bank.\n"
+            "With an API key, quiz questions are generated dynamically by Bosch AOAI Farm for each attempt.\n"
+            "Your key is also auto-loaded from the .env file in the project folder."
         )
         info.setObjectName("subtitle")
         info.setWordWrap(True)
@@ -1708,12 +1709,12 @@ class AdminPanel(QWidget):
             self.ai_msg.show()
             return
 
-        if configure_gemini(key):
+        if configure_aoai(key):
             self.ai_msg.setStyleSheet("color: #2e7d32;")
             self.ai_msg.setText("✓ API key configured successfully!")
         else:
             self.ai_msg.setStyleSheet("color: #d32f2f;")
-            self.ai_msg.setText("Failed. Install: pip install google-generativeai")
+            self.ai_msg.setText("Failed. Install: pip install openai")
         self.ai_msg.show()
 
     def _refresh_stats(self):
