@@ -5,7 +5,7 @@ import os
 import subprocess
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     pass  # dotenv optional; fall back to system env vars
 
@@ -14,6 +14,8 @@ _AOAI_ENDPOINT = os.getenv("BOSCH_AOAI_ENDPOINT", "https://aoai-farm.bosch-temp.
 _AOAI_MODEL    = os.getenv("BOSCH_AOAI_MODEL", "askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18")
 _AOAI_VERSION  = os.getenv("BOSCH_AOAI_API_VERSION", "2024-08-01-preview")
 _AOAI_KEY      = os.getenv("BOSCH_AOAI_API_KEY", "")
+# Optional explicit proxy override; set to empty string in .env to bypass system proxy
+_AOAI_PROXY    = os.getenv("BOSCH_AOAI_PROXY", None)  # None = use system HTTP_PROXY
 
 # API is available when a key is present (curl handles proxy auth transparently)
 GENAI_AVAILABLE = bool(_AOAI_KEY)
@@ -21,13 +23,27 @@ GENAI_AVAILABLE = bool(_AOAI_KEY)
 
 def _call_aoai(messages, max_tokens=6000):
     """Call Bosch AOAI Farm via curl (handles NTLM proxy auth via Windows SSPI)."""
-    proxy = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY", "")
+    if not _AOAI_KEY:
+        raise RuntimeError(
+            "BOSCH_AOAI_API_KEY is not set. "
+            "Add it to a .env file or set it as an environment variable."
+        )
+
+    # BOSCH_AOAI_PROXY in .env overrides the system HTTP_PROXY/HTTPS_PROXY.
+    # Set BOSCH_AOAI_PROXY= (empty) in .env to disable proxy entirely.
+    if _AOAI_PROXY is None:
+        proxy = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY", "")
+    else:
+        proxy = _AOAI_PROXY
     url = f"{_AOAI_ENDPOINT}/openai/deployments/{_AOAI_MODEL}/chat/completions?api-version={_AOAI_VERSION}"
     body = json.dumps({"messages": messages, "max_tokens": max_tokens})
 
-    cmd = ["curl", "-s"]
+    cmd = ["curl", "-s", "--show-error"]
     if proxy:
-        cmd += ["--proxy", proxy, "--proxy-ntlm", "--proxy-user", ":"]
+        cmd += ["--proxy", proxy.strip(), "--proxy-ntlm", "--proxy-user", ":"]
+    else:
+        # Prevent curl from picking up HTTP_PROXY/HTTPS_PROXY system env vars
+        cmd += ["--noproxy", "*"]
     cmd += [
         "-X", "POST", url,
         "-H", "Content-Type: application/json",
@@ -35,10 +51,26 @@ def _call_aoai(messages, max_tokens=6000):
         "-d", body,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    except FileNotFoundError:
+        raise RuntimeError(
+            "curl is not installed or not on PATH. "
+            "Install curl or add it to your system PATH."
+        )
+
     if result.returncode != 0:
-        raise RuntimeError(f"curl failed: {result.stderr}")
-    response = json.loads(result.stdout)
+        detail = result.stderr.strip() or result.stdout.strip() or f"exit code {result.returncode}"
+        raise RuntimeError(f"curl failed: {detail}")
+
+    if not result.stdout.strip():
+        raise RuntimeError("curl returned an empty response. Check network connectivity and proxy settings.")
+
+    try:
+        response = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Invalid JSON from API: {exc}\nResponse: {result.stdout[:500]}")
+
     if "error" in response:
         raise RuntimeError(f"API error: {response['error']}")
     return response["choices"][0]["message"]["content"]
