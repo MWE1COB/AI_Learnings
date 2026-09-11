@@ -3,8 +3,9 @@ import hashlib
 import os
 from datetime import datetime
 
+from runtime_paths import app_dir
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "learning_platform.db")
+DB_PATH = os.path.join(app_dir(), "learning_platform.db")
 
 SKILL_LEVELS = {
     1: "Beginner",

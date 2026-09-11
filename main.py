@@ -13,9 +13,10 @@ from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
 import database as db
 from quiz_engine import generate_quiz_with_ai, configure_aoai, GENAI_AVAILABLE, PASS_PERCENTAGE
 from styles import MAIN_STYLE
+from runtime_paths import resource_path
 
 # Reference documents (e.g. can.pdf, lin.pdf) take priority over general knowledge when generating a quiz.
-DOCUMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo_quiz", "documents")
+DOCUMENTS_DIR = resource_path("demo_quiz", "documents")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -1794,7 +1795,7 @@ class MainWindow(QMainWindow):
         self.header_layout.setContentsMargins(20, 8, 20, 8)
 
         # Bosch logo on the left
-        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image", "bosch_logo.png")
+        logo_path = resource_path("image", "bosch_logo.png")
         logo_label = QLabel()
         logo_label.setStyleSheet("background: transparent;")
         logo_label.setAttribute(Qt.WA_TranslucentBackground)

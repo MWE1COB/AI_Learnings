@@ -17,6 +17,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from quiz_engine import generate_quiz_with_ai, GENAI_AVAILABLE, PASS_PERCENTAGE  # noqa: E402
 from database import SKILL_LEVELS  # noqa: E402
+from runtime_paths import app_dir  # noqa: E402
 
 import quiz_store
 
@@ -33,7 +34,7 @@ AI_TOPIC_LABEL = "Artificial Intelligence (" + ", ".join(AI_TOPICS) + ")"
 NUM_QUESTIONS = 5  # kept short for live demos
 PER_QUESTION_SEC = 30  # each question is shown for 30 seconds max
 QUIZ_DURATION_SEC = NUM_QUESTIONS * PER_QUESTION_SEC  # fixed 2:30 quiz for demos
-DOCUMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "documents")
+DOCUMENTS_DIR = os.path.join(app_dir(), "documents")
 
 # In-memory store for in-progress quiz sessions, keyed by a server-side session id.
 # (Keeps the browser cookie small — only the session id is stored client-side.)

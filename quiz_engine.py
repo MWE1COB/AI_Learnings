@@ -4,9 +4,12 @@ import re
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
+
+from runtime_paths import app_dir
+
 try:
     from dotenv import load_dotenv
-    load_dotenv(override=True)
+    load_dotenv(dotenv_path=os.path.join(app_dir(), ".env"), override=True)
 except ImportError:
     pass  # dotenv optional; fall back to system env vars
 

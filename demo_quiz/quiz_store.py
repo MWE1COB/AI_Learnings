@@ -1,10 +1,14 @@
 """Excel-backed storage for demo quiz attempts (admin dashboard + export)."""
 import os
+import sys
 import threading
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
 
-EXCEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo_results.xlsx")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from runtime_paths import app_dir  # noqa: E402
+
+EXCEL_PATH = os.path.join(app_dir(), "demo_results.xlsx")
 
 HEADERS = ["Name", "NTID", "Topic", "Level", "Score", "Total Questions",
            "Percentage", "Duration (sec)", "Submitted At"]
