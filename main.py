@@ -831,7 +831,7 @@ class QuizScreen(QWidget):
         self.card_layout.setContentsMargins(30, 30, 30, 30)
         self.card_layout.setSpacing(16)
 
-        self.loading_label = QLabel("⏳ Generating quiz questions...")
+        self.loading_label = QLabel("⏳ Generating questions...")
         self.loading_label.setAlignment(Qt.AlignCenter)
         self.loading_label.setFont(QFont("Segoe UI", 14))
         self.loading_label.setStyleSheet("color: #1a73e8;")

@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <title>Your Result</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='particles.js') }}" defer></script>
 </head>
 <body>
-<div class="page-center{% if review %} page-center-top{% endif %}">
+<img class="site-logo" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
+<div class="page-center">
   <div class="card fade-in{% if record.passed %} celebrate{% endif %}">
     {% if record.passed %}
     <h1 class="title">🏆 Congratulations, you passed!</h1>
@@ -40,25 +42,28 @@
   </div>
 
   {% if review %}
-  <div class="card fade-in review-card" id="review-card" style="display: none;">
-    <h2 class="title" style="font-size: 1.3em;">Answer Review</h2>
-    {% for r in review %}
-    <div class="question-card">
-      <div class="question-text">{{ loop.index }}. {{ r.question }}</div>
-      <div class="options">
-        {% for opt in r.options %}
-        <div class="option{% if loop.index0 == r.correct_answer %} correct-answer{% elif loop.index0 == r.selected_answer %} wrong-answer{% endif %}">
-          <span>{{ opt }}</span>
-          {% if loop.index0 == r.correct_answer %}<span class="answer-tag">✓ Correct answer</span>{% endif %}
-          {% if loop.index0 == r.selected_answer and not r.is_correct %}<span class="answer-tag">✗ Your answer</span>{% endif %}
+  <div class="modal-overlay" id="review-overlay">
+    <div class="card fade-in review-card" id="review-card">
+      <button type="button" class="modal-close" id="review-close" aria-label="Close">&times;</button>
+      <h2 class="title" style="font-size: 1.3em;">Answer Review</h2>
+      {% for r in review %}
+      <div class="question-card">
+        <div class="question-text">{{ loop.index }}. {{ r.question }}</div>
+        <div class="options">
+          {% for opt in r.options %}
+          <div class="option{% if loop.index0 == r.correct_answer %} correct-answer{% elif loop.index0 == r.selected_answer %} wrong-answer{% endif %}">
+            <span>{{ opt }}</span>
+            {% if loop.index0 == r.correct_answer %}<span class="answer-tag">✓ Correct answer</span>{% endif %}
+            {% if loop.index0 == r.selected_answer and not r.is_correct %}<span class="answer-tag">✗ Your answer</span>{% endif %}
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
+        {% if r.selected_answer is none %}
+        <p class="subtitle" style="color:#d32f2f;">You did not answer this question.</p>
+        {% endif %}
       </div>
-      {% if r.selected_answer is none %}
-      <p class="subtitle" style="color:#d32f2f;">You did not answer this question.</p>
-      {% endif %}
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
   {% endif %}
 </div>
@@ -84,13 +89,15 @@ const step = () => {
 requestAnimationFrame(step);
 
 const viewResultBtn = document.getElementById('view-result-btn');
-const reviewCard = document.getElementById('review-card');
-if (viewResultBtn && reviewCard) {
-  viewResultBtn.addEventListener('click', () => {
-    const showing = reviewCard.style.display !== 'none';
-    reviewCard.style.display = showing ? 'none' : 'block';
-    viewResultBtn.textContent = showing ? 'View Result' : 'Hide Result';
-  });
+const reviewOverlay = document.getElementById('review-overlay');
+const reviewClose = document.getElementById('review-close');
+if (viewResultBtn && reviewOverlay) {
+  const openModal = () => { reviewOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; };
+  const closeModal = () => { reviewOverlay.classList.remove('active'); document.body.style.overflow = ''; };
+  viewResultBtn.addEventListener('click', openModal);
+  reviewClose.addEventListener('click', closeModal);
+  reviewOverlay.addEventListener('click', (e) => { if (e.target === reviewOverlay) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 }
 
 {% if record.passed %}

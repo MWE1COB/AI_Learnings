@@ -26,22 +26,9 @@ app.secret_key = os.urandom(24).hex()
 HOST = "0.0.0.0"  # listen on all interfaces so other laptops on the same network can connect
 PORT = 5050
 
-TOPIC_GROUPS = [
-    {"group": "Programming", "topics": ["C", "C++", "Python", "GitHub"]},
-    {
-        "group": "Communication Protocols",
-        "topics": ["CAN", "CAN FD", "LIN", "FlexRay", "Ethernet", "OBD", "UDS"],
-    },
-    {
-        "group": "Artificial Intelligence",
-        "topics": ["Prompt Engineering", "Machine Learning", "Deep Learning", "Generative AI"],
-    },
-    {
-        "group": "General",
-        "topics": ["Aispice", "Agile Method"],
-    },
-]
-ALL_TOPICS = [t for g in TOPIC_GROUPS for t in g["topics"]]
+# Quiz is fixed to AI topics only — the user no longer picks a topic.
+AI_TOPICS = ["Prompt Engineering", "Machine Learning", "Deep Learning", "Generative AI"]
+AI_TOPIC_LABEL = "Artificial Intelligence (" + ", ".join(AI_TOPICS) + ")"
 
 NUM_QUESTIONS = 5  # kept short for live demos
 PER_QUESTION_SEC = 30  # each question is shown for 30 seconds max
@@ -81,29 +68,12 @@ def home():
             return render_template("home.html", errors=errors, form=request.form)
 
         sid = str(uuid.uuid4())
-        _SESSIONS[sid] = {"name": name, "ntid": ntid}
+        _SESSIONS[sid] = {"name": name, "ntid": ntid, "topic": AI_TOPIC_LABEL}
         session["sid"] = sid
-        return redirect(url_for("topics"))
+        return redirect(url_for("level"))
 
     session.pop("sid", None)
     return render_template("home.html", errors={}, form={})
-
-
-@app.route("/topics", methods=["GET", "POST"])
-def topics():
-    qs = _get_quiz_session()
-    if qs is None:
-        return redirect(url_for("home"))
-
-    if request.method == "POST":
-        topic = request.form.get("topic")
-        if topic not in ALL_TOPICS:
-            flash("Please select a valid topic.")
-            return redirect(url_for("topics"))
-        qs["topic"] = topic
-        return redirect(url_for("level"))
-
-    return render_template("topics.html", groups=TOPIC_GROUPS, user=qs)
 
 
 @app.route("/level", methods=["GET", "POST"])

@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <title>Quiz — {{ user.topic }}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='particles.js') }}" defer></script>
 </head>
 <body>
 <div class="quiz-header">
   <div class="quiz-info">
     <span class="quiz-info-name">👤 {{ user.name }}</span>
     <span class="quiz-info-sep">&middot;</span>
-    <span>📚 {{ user.topic }}</span>
-    <span class="quiz-info-sep">&middot;</span>
     <span>🎯 {{ level_name }}</span>
   </div>
   <div class="timer" id="timer">--:--</div>
+  <img class="site-logo site-logo-inline" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
 </div>
 
 <form id="quiz-form" method="post" action="{{ url_for('submit') }}" class="quiz-body">

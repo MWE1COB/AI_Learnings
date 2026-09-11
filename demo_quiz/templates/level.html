@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <title>Select Level — Demo</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='particles.js') }}" defer></script>
 </head>
 <body>
+<img class="site-logo" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
 <div class="page-center">
   <div class="card fade-in">
-    <h1 class="title">🎯 {{ user.topic }}</h1>
-    <p class="subtitle">Choose your difficulty level</p>
+    <h1 class="title">🤖 Artificial Intelligence</h1>
+    <p class="subtitle">choose your difficulty level</p>
     <form method="post">
       <div class="level-list">
         {% for id, name in levels.items() %}

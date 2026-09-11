@@ -26,12 +26,84 @@ body {
   animation: gradientShift 16s ease infinite;
   min-height: 100vh;
   color: var(--ink);
+  position: relative;
+  overflow-x: hidden;
 }
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+/* Floating glowing orbs drifting across the background for a lively feel. */
+body::before, body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(2px);
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  width: 420px; height: 420px;
+  top: -120px; left: -120px;
+  background: radial-gradient(circle at 30% 30%, rgba(99,102,241,0.55), rgba(99,102,241,0) 70%);
+  animation: floatOrb1 22s ease-in-out infinite;
+}
+body::after {
+  width: 520px; height: 520px;
+  bottom: -160px; right: -160px;
+  background: radial-gradient(circle at 60% 60%, rgba(6,182,212,0.5), rgba(6,182,212,0) 70%);
+  animation: floatOrb2 26s ease-in-out infinite;
+}
+@keyframes floatOrb1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(80px, 60px) scale(1.15); }
+}
+@keyframes floatOrb2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-60px, -50px) scale(1.1); }
+}
+
+.bg-particles {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-particles span {
+  position: absolute;
+  bottom: -40px;
+  width: 10px; height: 10px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  animation: particleRise linear infinite;
+}
+@keyframes particleRise {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(-110vh) translateX(30px); opacity: 0; }
+}
+
+.site-logo {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  height: 40px;
+  z-index: 100;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));
+  animation: fadeIn 0.6s ease both;
+}
+.site-logo.site-logo-inline {
+  position: static;
+  height: 30px;
+  filter: none;
+  animation: none;
+  margin-left: 12px;
+}
+
 
 ::selection { background: var(--primary-light); color: #fff; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -44,6 +116,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .card {
@@ -171,6 +245,7 @@ body {
   backdrop-filter: blur(8px);
   padding: 16px 28px; box-shadow: 0 2px 16px rgba(31,27,71,0.1);
 }
+.quiz-header .timer { display: flex; align-items: center; }
 .quiz-info { font-weight: 700; color: var(--primary-dark); font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .quiz-info-sep { color: var(--border); font-weight: 400; }
 .quiz-info-name { color: var(--ink); }
@@ -229,7 +304,7 @@ body {
   font-size: 30px; font-weight: 700; color: var(--primary-dark);
 }
 
-.admin-wrap { max-width: 1150px; margin: 36px auto; padding: 0 20px; }
+.admin-wrap { max-width: 1150px; margin: 36px auto; padding: 0 20px; position: relative; z-index: 1; }
 .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .admin-header .title { color: #fff; }
 .admin-table {
@@ -250,12 +325,48 @@ body {
 }
 .review-card { max-width: 720px; text-align: left; margin-top: 20px; }
 .review-card .question-text { color: var(--ink); }
+.review-card .question-card { display: block; }
 .review-card .option { cursor: default; justify-content: space-between; }
 .review-card .option.correct-answer { background: #ecfdf3; border-color: var(--success); }
 .review-card .option.wrong-answer { background: #fef2f2; border-color: var(--danger); }
 .answer-tag { font-size: 12px; font-weight: 700; white-space: nowrap; }
 .correct-answer .answer-tag { color: var(--success); }
 .wrong-answer .answer-tag { color: var(--danger); }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 12, 41, 0.6);
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+.modal-overlay.active { display: flex; animation: fadeIn 0.2s ease both; }
+.modal-overlay .review-card {
+  margin: 0;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  animation: fadeIn 0.25s ease both;
+}
+.modal-close {
+  position: sticky;
+  top: -22px;
+  float: right;
+  margin-top: -12px;
+  margin-right: -12px;
+  background: none;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+}
+.modal-close:hover { color: var(--ink); }
 
 .status-badge {
   display: inline-block;

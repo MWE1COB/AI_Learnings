@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Preparing your quiz…</title>
+<title>Preparing...</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='particles.js') }}" defer></script>
 </head>
 <body>
+<img class="site-logo" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
 <div class="page-center">
   <div class="card fade-in">
     <div class="spinner"></div>
-    <h1 class="title">Generating your quiz…</h1>
-    <p class="subtitle" id="status-text">AI is crafting questions on {{ user.topic }}</p>
+    <h1 class="title">Generating...</h1>
+    <p class="subtitle" id="status-text">AI is crafting questions</p>
     <p class="error" id="error-text"></p>
   </div>
 </div>
@@ -22,11 +24,11 @@ fetch("{{ url_for('generate') }}")
       window.location.href = "{{ url_for('quiz') }}";
     } else {
       document.getElementById("error-text").textContent = data.error || "Something went wrong.";
-      document.getElementById("status-text").textContent = "Failed to generate quiz.";
+      document.getElementById("status-text").textContent = "Failed to generate.";
     }
   })
   .catch(() => {
-    document.getElementById("error-text").textContent = "Network error while generating quiz.";
+    document.getElementById("error-text").textContent = "Network error while generating.";
   });
 </script>
 </body>
