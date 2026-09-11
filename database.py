@@ -15,6 +15,7 @@ SKILL_LEVELS = {
 
 TOPICS = [
     "C Programming",
+    "C++",
     "Python",
     "Java",
     "JavaScript",
@@ -22,6 +23,12 @@ TOPICS = [
     "Data Structures",
     "Algorithms",
     "HTML/CSS",
+    "Prompt Engineering",
+    "Machine Learning",
+    "Deep Learning",
+    "Generative AI",
+    "Aispice",
+    "Agile Method",
 ]
 
 

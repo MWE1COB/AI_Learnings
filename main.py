@@ -11,8 +11,11 @@ from PyQt5.QtCore import Qt, QSize, QTimer, QRectF
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
 
 import database as db
-from quiz_engine import generate_quiz_with_ai, configure_aoai, GENAI_AVAILABLE, get_quiz_timer, PASS_PERCENTAGE
+from quiz_engine import generate_quiz_with_ai, configure_aoai, GENAI_AVAILABLE, PASS_PERCENTAGE
 from styles import MAIN_STYLE
+
+# Reference documents (e.g. can.pdf, lin.pdf) take priority over general knowledge when generating a quiz.
+DOCUMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "demo_quiz", "documents")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -949,9 +952,12 @@ class QuizScreen(QWidget):
         QTimer.singleShot(100, self._generate_questions)
 
     def _generate_questions(self):
-        self.questions = generate_quiz_with_ai(self.topic, self.level, 20)
+        # Demo mode: 10 questions generated concurrently, fixed 5-minute timer.
+        self.questions = generate_quiz_with_ai(
+            self.topic, self.level, 10, single_batch=True, documents_dir=DOCUMENTS_DIR
+        )
         self.progress_bar.setMaximum(len(self.questions))
-        self.remaining_time = get_quiz_timer(self.level, self.questions)
+        self.remaining_time = 300
         self.timer.start(1000)
         self.loading_label.hide()
         self.question_label.show()

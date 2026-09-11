@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-wrap fade-in">
+  <div class="admin-header">
+    <h1 class="title">📊 Admin Dashboard</h1>
+    <a href="{{ url_for('admin_download') }}" class="btn-primary small">Download Excel</a>
+  </div>
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Name</th><th>NTID</th><th>Topic</th><th>Level</th>
+        <th>Score</th><th>Percentage</th><th>Duration (s)</th><th>Submitted At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in attempts %}
+      <tr>
+        <td>{{ a.name }}</td>
+        <td>{{ a.ntid }}</td>
+        <td>{{ a.topic }}</td>
+        <td>{{ a.level }}</td>
+        <td>{{ a.score }}/{{ a.total }}</td>
+        <td>{{ a.percentage }}%</td>
+        <td>{{ a.duration_sec }}</td>
+        <td>{{ a.submitted_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty">No attempts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</body>
+</html>

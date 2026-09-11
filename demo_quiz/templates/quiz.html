@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quiz — {{ user.topic }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="quiz-header">
+  <div class="quiz-info">
+    <span class="quiz-info-name">👤 {{ user.name }}</span>
+    <span class="quiz-info-sep">&middot;</span>
+    <span>📚 {{ user.topic }}</span>
+    <span class="quiz-info-sep">&middot;</span>
+    <span>🎯 {{ level_name }}</span>
+  </div>
+  <div class="timer" id="timer">--:--</div>
+</div>
+
+<form id="quiz-form" method="post" action="{{ url_for('submit') }}" class="quiz-body">
+  <div class="question-progress">
+    <span id="question-counter">Question 1 of {{ questions|length }}</span>
+    <div class="question-timebar"><div class="question-timebar-fill" id="question-timebar-fill"></div></div>
+  </div>
+  {% for q in questions %}
+  <div class="question-card" data-index="{{ loop.index0 }}">
+    <div class="question-text">{{ loop.index }}. {{ q.question }}</div>
+    <div class="options">
+      {% for opt in q.options %}
+      <label class="option">
+        <input type="radio" name="qplaceholder" value="{{ loop.index0 }}">
+        <span>{{ opt }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <button type="submit" id="submit-btn" class="btn-primary" style="display:none;">Submit</button>
+</form>
+
+<script>
+// Fix radio group names to be per-question (q0, q1, ...) since Jinja loop.index0 above is per-option.
+document.querySelectorAll('.question-card').forEach((card, qIdx) => {
+  card.querySelectorAll('input[type=radio]').forEach(input => {
+    input.name = 'q' + qIdx;
+  });
+});
+
+const totalQuestions = {{ questions|length }};
+const perQuestionSec = {{ per_question_sec }};
+const form = document.getElementById('quiz-form');
+const submitBtn = document.getElementById('submit-btn');
+const cards = Array.from(document.querySelectorAll('.question-card'));
+const counterEl = document.getElementById('question-counter');
+const timebarFill = document.getElementById('question-timebar-fill');
+
+let currentIndex = 0;
+let questionRemaining = perQuestionSec;
+let questionTick = null;
+let advancing = false;
+
+function renderTimebar() {
+  const pct = Math.max(0, (questionRemaining / perQuestionSec) * 100);
+  timebarFill.style.width = pct + '%';
+  timebarFill.classList.toggle('urgent', questionRemaining <= 10);
+}
+
+function startQuestionTimer() {
+  clearInterval(questionTick);
+  questionRemaining = perQuestionSec;
+  renderTimebar();
+  questionTick = setInterval(() => {
+    questionRemaining -= 1;
+    renderTimebar();
+    if (questionRemaining <= 0) {
+      goToNext();
+    }
+  }, 1000);
+}
+
+function showQuestion(idx) {
+  counterEl.textContent = `Question ${idx + 1} of ${totalQuestions}`;
+  cards[idx].classList.remove('exit');
+  cards[idx].classList.add('active', 'enter');
+  cards[idx].addEventListener('animationend', function handler() {
+    cards[idx].classList.remove('enter');
+    cards[idx].removeEventListener('animationend', handler);
+  });
+  startQuestionTimer();
+  advancing = false;
+}
+
+function goToNext() {
+  if (advancing) return;
+  advancing = true;
+  clearInterval(questionTick);
+  const current = cards[currentIndex];
+  current.classList.add('exit');
+  setTimeout(() => {
+    current.classList.remove('active', 'exit');
+    currentIndex += 1;
+    if (currentIndex < totalQuestions) {
+      showQuestion(currentIndex);
+    } else {
+      form.submit();
+    }
+  }, 300);
+}
+
+cards.forEach((card, qIdx) => {
+  card.querySelectorAll('input[type=radio]').forEach(input => {
+    input.addEventListener('change', () => {
+      if (qIdx === currentIndex) {
+        setTimeout(goToNext, 400);
+      }
+    });
+  });
+});
+
+showQuestion(currentIndex);
+
+// Overall countdown timer — auto-submits when total time runs out (fallback safety net).
+let remaining = {{ duration_sec }};
+const timerEl = document.getElementById('timer');
+function renderTimer() {
+  const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+  const s = (remaining % 60).toString().padStart(2, '0');
+  timerEl.textContent = `${m}:${s}`;
+  if (remaining <= 30) timerEl.classList.add('urgent');
+}
+renderTimer();
+const tick = setInterval(() => {
+  remaining -= 1;
+  renderTimer();
+  if (remaining <= 0) {
+    clearInterval(tick);
+    form.submit();
+  }
+}, 1000);
+</script>
+</body>
+</html>

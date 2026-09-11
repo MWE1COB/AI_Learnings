@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Select Topic — Demo</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page-center">
+  <div class="card fade-in wide">
+    <h1 class="title">👋 Hi {{ user.name }}</h1>
+    <p class="subtitle">Choose a topic to be quizzed on</p>
+    <form method="post">
+      {% for grp in groups %}
+      <div class="topic-group">
+        <h3>{{ grp.group }}</h3>
+        <div class="topic-grid">
+          {% for t in grp.topics %}
+          <label class="topic-chip">
+            <input type="radio" name="topic" value="{{ t }}" required>
+            <span>{{ t }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn-primary">Next →</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

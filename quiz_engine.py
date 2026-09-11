@@ -3,11 +3,21 @@ import random
 import re
 import os
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 try:
     from dotenv import load_dotenv
     load_dotenv(override=True)
 except ImportError:
     pass  # dotenv optional; fall back to system env vars
+
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None  # PDF grounding disabled if pypdf isn't installed
+
+# Cache of extracted document text, keyed by (path, mtime) so repeated quiz
+# generations for the same topic don't re-parse the PDF every time.
+_DOC_TEXT_CACHE = {}
 
 # Bosch AOAI Farm connection settings (loaded from .env)
 _AOAI_ENDPOINT = os.getenv("BOSCH_AOAI_ENDPOINT", "https://aoai-farm.bosch-temp.com/api")
@@ -40,7 +50,7 @@ def _call_aoai(messages, max_tokens=6000):
 
     cmd = ["curl", "-s", "--show-error"]
     if proxy:
-        cmd += ["--proxy", proxy.strip(), "--proxy-ntlm", "--proxy-user", ":"]
+        cmd += ["--proxy", proxy.strip(), "--proxy-anyauth", "--proxy-user", ":"]
     else:
         # Prevent curl from picking up HTTP_PROXY/HTTPS_PROXY system env vars
         cmd += ["--noproxy", "*"]
@@ -98,29 +108,114 @@ def get_quiz_timer(level, questions):
     return total
 
 
-def generate_quiz_with_ai(topic, level, num_questions=20):
-    """Generate quiz questions using Bosch AOAI Farm in two batches for reliability."""
+def _find_topic_document(topic, documents_dir):
+    """Return the path of a reference document matching `topic`, if one exists.
+
+    Filenames are matched against the topic name with spaces/punctuation
+    stripped (e.g. "CAN FD" -> "canfd.pdf", "FlexRay" -> "flexray.pdf").
+    """
+    if not documents_dir or not os.path.isdir(documents_dir):
+        return None
+
+    normalized_topic = re.sub(r"[^a-z0-9]", "", topic.lower())
+    for fname in os.listdir(documents_dir):
+        stem, ext = os.path.splitext(fname)
+        if ext.lower() != ".pdf":
+            continue
+        normalized_stem = re.sub(r"[^a-z0-9]", "", stem.lower())
+        if normalized_stem == normalized_topic:
+            return os.path.join(documents_dir, fname)
+    return None
+
+
+def _extract_pdf_text(path, max_chars=4000):
+    """Extract text from a PDF, cached by (path, mtime). Returns "" on failure."""
+    if PdfReader is None:
+        return ""
+
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return ""
+
+    cache_key = (path, mtime)
+    if cache_key in _DOC_TEXT_CACHE:
+        return _DOC_TEXT_CACHE[cache_key]
+
+    text = ""
+    try:
+        reader = PdfReader(path)
+        parts = [page.extract_text() or "" for page in reader.pages]
+        text = "\n".join(parts).strip()[:max_chars]
+    except Exception:
+        text = ""
+
+    _DOC_TEXT_CACHE[cache_key] = text
+    return text
+
+
+def generate_quiz_with_ai(topic, level, num_questions=20, single_batch=False, documents_dir=None):
+    """Generate quiz questions using Bosch AOAI Farm.
+
+    Splits the request into small chunks generated concurrently, so wall-clock
+    time stays close to a single small chunk's latency regardless of num_questions.
+    `single_batch` is kept for backward compatibility and no longer changes behavior.
+
+    If `documents_dir` is given and contains a reference document for `topic`
+    (e.g. documents/can.pdf for topic "CAN"), questions are grounded in that
+    document's content first; otherwise questions are generated from general
+    knowledge.
+    """
     level_name = SKILL_LEVELS.get(level, "Beginner")
 
-    batch_size = (num_questions + 1) // 2  # e.g. 10 for 20 questions
-    all_questions = []
+    document_text = ""
+    doc_path = _find_topic_document(topic, documents_dir)
+    if doc_path:
+        document_text = _extract_pdf_text(doc_path)
 
-    for _ in range(2):
-        batch = _generate_with_aoai(topic, level_name, batch_size)
-        all_questions.extend(batch)
-        if len(all_questions) >= num_questions:
-            break
+    # Split into small chunks and fire them at AOAI concurrently — wall-clock time
+    # is then bounded by one small chunk's latency (~5-10s) instead of a single
+    # large request that has to generate all questions serially (~30s+).
+    chunk_size = 2
+    num_chunks = (num_questions + chunk_size - 1) // chunk_size
+    chunk_sizes = [chunk_size] * (num_chunks - 1) + [num_questions - chunk_size * (num_chunks - 1)]
+
+    all_questions = []
+    with ThreadPoolExecutor(max_workers=num_chunks) as pool:
+        futures = [
+            pool.submit(_generate_with_aoai, topic, level_name, size, document_text)
+            for size in chunk_sizes
+        ]
+        for future in futures:
+            try:
+                all_questions.extend(future.result())
+            except Exception:
+                continue  # a failed chunk shouldn't sink the whole quiz
 
     if len(all_questions) < 5:
-        raise ValueError(f"Only {len(all_questions)} valid questions generated across batches")
+        raise ValueError(f"Only {len(all_questions)} valid questions generated")
 
     return all_questions[:num_questions]
 
 
-def _generate_with_aoai(topic, level_name, num_questions):
+def _generate_with_aoai(topic, level_name, num_questions, document_text=""):
     """Generate a batch of MCQ questions using Bosch AOAI Farm (Azure OpenAI)."""
 
+    if document_text:
+        source_instructions = f"""Base the questions primarily on the reference material below. Only use
+your general knowledge of "{topic}" to fill gaps where the material is insufficient.
+
+REFERENCE MATERIAL:
+\"\"\"
+{document_text}
+\"\"\"
+"""
+    else:
+        source_instructions = f'No reference material is available for "{topic}", so use your general knowledge.'
+
     prompt = f"""Generate exactly {num_questions} challenging multiple-choice quiz questions for the topic "{topic}" at {level_name} difficulty level.
+
+{source_instructions}
 
 IMPORTANT difficulty guidelines:
 - Beginner: avoid trivial syntax questions; focus on concepts and common pitfalls
@@ -144,7 +239,10 @@ Example:
   {{"type": "mcq", "question": "What is X?", "options": ["A", "B", "C", "D"], "answer": 0}}
 ]
 """
-    text = _call_aoai([{"role": "user", "content": prompt}]).strip()
+    # Cap tokens to what's actually needed for this batch size — smaller requests
+    # finish faster than always asking for the full 6000-token budget.
+    max_tokens = min(1500, max(300, num_questions * 180))
+    text = _call_aoai([{"role": "user", "content": prompt}], max_tokens=max_tokens).strip()
 
     questions = _parse_questions_json(text)
 
