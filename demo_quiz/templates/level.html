@@ -12,16 +12,15 @@
   <div class="card fade-in">
     <h1 class="title">🤖 Artificial Intelligence</h1>
     <p class="subtitle">choose your difficulty level</p>
-    <form method="post">
+    <form method="post" id="level-form">
       <div class="level-list">
         {% for id, name in levels.items() %}
         <label class="level-option">
-          <input type="radio" name="level" value="{{ id }}" required>
+          <input type="radio" name="level" value="{{ id }}" required onchange="this.form.submit()">
           <span>{{ name }}</span>
         </label>
         {% endfor %}
       </div>
-      <button type="submit" class="btn-primary">Start →</button>
     </form>
   </div>
 </div>

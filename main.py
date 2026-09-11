@@ -1200,7 +1200,7 @@ class QuizResultScreen(QWidget):
             result_icon = "🚫"
             color = "#666"
         elif passed:
-            result_text = "Congratulations! You Passed! 🎉"
+            result_text = "Congratulations 🎉"
             result_icon = "✅"
             color = "#2e7d32"
         else:

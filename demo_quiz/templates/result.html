@@ -11,7 +11,7 @@
 <div class="page-center">
   <div class="card fade-in{% if record.passed %} celebrate{% endif %}">
     {% if record.passed %}
-    <h1 class="title">🏆 Congratulations, you passed!</h1>
+    <h1 class="title">🏆 Congratulations</h1>
     {% else %}
     <h1 class="title">Brain Tickle Challenge completed!</h1>
     {% endif %}
@@ -25,7 +25,7 @@
     <span class="status-badge {{ 'pass' if record.passed else 'fail' }}">
       {{ 'PASSED ✓' if record.passed else 'FAILED ✗' }} &middot; need {{ pass_percentage }}% to pass
     </span>
-    <p class="subtitle">{{ record.name }} scored <strong>{{ record.score }}/{{ record.total }}</strong> on {{ record.topic }}</p>
+    <p class="subtitle">{{ record.name }} scored <strong>{{ record.score }}/{{ record.total }}</strong></p>
     <p class="subtitle">Level attempted: <strong>{{ record.level }}</strong></p>
     {% if record.passed and record.next_level %}
     <p class="subtitle next-level-tip">🚀 Great job! You're ready for the next level: <strong>{{ record.next_level }}</strong></p>
