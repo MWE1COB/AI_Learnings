@@ -3,3 +3,4 @@ openpyxl
 python-dotenv
 requests
 pypdf
+msoffcrypto-tool

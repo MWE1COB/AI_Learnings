@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt, QSize, QTimer, QRectF
 from PyQt5.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen
 
 import database as db
-from quiz_engine import generate_quiz_with_ai, configure_aoai, GENAI_AVAILABLE, PASS_PERCENTAGE
+from quiz_engine import generate_quiz_with_ai, configure_aoai, persist_api_key, GENAI_AVAILABLE, PASS_PERCENTAGE
 from styles import MAIN_STYLE
 from runtime_paths import resource_path
 
@@ -1716,9 +1716,9 @@ class AdminPanel(QWidget):
             self.ai_msg.show()
             return
 
-        if configure_aoai(key):
+        if persist_api_key(key):
             self.ai_msg.setStyleSheet("color: #2e7d32;")
-            self.ai_msg.setText("✓ API key configured successfully!")
+            self.ai_msg.setText("✓ API key configured & saved securely!")
         else:
             self.ai_msg.setStyleSheet("color: #d32f2f;")
             self.ai_msg.setText("Failed. Install: pip install openai")

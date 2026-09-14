@@ -1,12 +1,14 @@
 """Excel-backed storage for demo quiz attempts (admin dashboard + export)."""
+import io
 import os
 import sys
 import threading
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
+from msoffcrypto.format.ooxml import OOXMLFile
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from runtime_paths import app_dir  # noqa: E402
+from runtime_paths import app_dir, secure_file  # noqa: E402
 
 EXCEL_PATH = os.path.join(app_dir(), "demo_results.xlsx")
 
@@ -23,6 +25,7 @@ def _ensure_workbook():
         ws.title = "Results"
         ws.append(HEADERS)
         wb.save(EXCEL_PATH)
+        secure_file(EXCEL_PATH)
         return
 
     # Migrate older workbooks saved with a "Phone" column to the current schema.
@@ -73,3 +76,18 @@ def get_all_attempts():
     attempts = [dict(zip(keys, row)) for row in rows if row and row[0]]
     attempts.reverse()
     return attempts
+
+
+def export_encrypted(password):
+    """Return the workbook bytes password-protected so only someone with the
+    export password (i.e. the admin) can open it in Excel. The on-disk copy
+    used by the app itself stays unencrypted so the dashboard keeps working.
+    """
+    _ensure_workbook()
+    with _lock:
+        with open(EXCEL_PATH, "rb") as f:
+            plain = io.BytesIO(f.read())
+    encrypted = io.BytesIO()
+    OOXMLFile(plain).encrypt(password, encrypted)
+    encrypted.seek(0)
+    return encrypted

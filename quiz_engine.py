@@ -5,11 +5,15 @@ import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-from runtime_paths import app_dir
+from runtime_paths import app_dir, secure_file
+import secret_store
+
+_ENV_PATH = os.path.join(app_dir(), ".env")
+secure_file(_ENV_PATH)  # restrict .env (contains the API key) to this user only
 
 try:
     from dotenv import load_dotenv
-    load_dotenv(dotenv_path=os.path.join(app_dir(), ".env"), override=True)
+    load_dotenv(dotenv_path=_ENV_PATH, override=True)
 except ImportError:
     pass  # dotenv optional; fall back to system env vars
 
@@ -26,7 +30,16 @@ _DOC_TEXT_CACHE = {}
 _AOAI_ENDPOINT = os.getenv("BOSCH_AOAI_ENDPOINT", "https://aoai-farm.bosch-temp.com/api")
 _AOAI_MODEL    = os.getenv("BOSCH_AOAI_MODEL", "askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18")
 _AOAI_VERSION  = os.getenv("BOSCH_AOAI_API_VERSION", "2024-08-01-preview")
-_AOAI_KEY      = os.getenv("BOSCH_AOAI_API_KEY", "")
+
+_AOAI_KEY_RAW = os.getenv("BOSCH_AOAI_API_KEY", "")
+_AOAI_KEY = secret_store.decrypt(_AOAI_KEY_RAW)
+if _AOAI_KEY_RAW and not _AOAI_KEY_RAW.startswith("dpapi:"):
+    # One-time migration: re-encrypt a legacy plaintext key in place.
+    try:
+        secret_store.set_env_value(_ENV_PATH, "BOSCH_AOAI_API_KEY", secret_store.encrypt(_AOAI_KEY_RAW))
+        secure_file(_ENV_PATH)
+    except OSError:
+        pass
 # Optional explicit proxy override; set to empty string in .env to bypass system proxy
 _AOAI_PROXY    = os.getenv("BOSCH_AOAI_PROXY", None)  # None = use system HTTP_PROXY
 
@@ -296,6 +309,16 @@ def configure_aoai(api_key):
     global _AOAI_KEY, GENAI_AVAILABLE
     _AOAI_KEY = api_key
     GENAI_AVAILABLE = bool(api_key)
+    return True
+
+
+def persist_api_key(api_key):
+    """Configure the key for this session AND save it to .env, DPAPI-encrypted
+    so the on-disk value is only readable by this Windows user on this machine.
+    """
+    configure_aoai(api_key)
+    secret_store.set_env_value(_ENV_PATH, "BOSCH_AOAI_API_KEY", secret_store.encrypt(api_key))
+    secure_file(_ENV_PATH)
     return True
 
 

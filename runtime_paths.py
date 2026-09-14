@@ -24,3 +24,24 @@ def app_dir():
 def resource_path(*parts):
     base = getattr(sys, "_MEIPASS", _SOURCE_DIR)
     return os.path.join(base, *parts)
+
+
+def secure_file(path):
+    """Restrict a sensitive file (e.g. .env) to the current user + SYSTEM/Administrators.
+
+    Best-effort: silently no-ops on non-Windows platforms or if icacls fails
+    (e.g. insufficient privileges), since this is a hardening step, not a
+    hard requirement for the app to function.
+    """
+    if os.name != "nt" or not os.path.exists(path):
+        return
+    try:
+        import subprocess
+        user = f"{os.environ.get('USERDOMAIN', '')}\\{os.environ.get('USERNAME', '')}"
+        subprocess.run(
+            ["icacls", path, "/inheritance:r",
+             "/grant:r", f"{user}:(F)", "SYSTEM:(F)", "Administrators:(F)"],
+            capture_output=True, check=False,
+        )
+    except Exception:
+        pass  # non-fatal: permission hardening is best-effort

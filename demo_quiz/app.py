@@ -3,6 +3,7 @@
 Run with: python app.py
 Automatically opens the quiz in the default browser.
 """
+import functools
 import os
 import re
 import sys
@@ -20,12 +21,26 @@ from database import SKILL_LEVELS  # noqa: E402
 from runtime_paths import app_dir  # noqa: E402
 
 import quiz_store
+import admin_secrets
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24).hex()
 
 HOST = "0.0.0.0"  # listen on all interfaces so other laptops on the same network can connect
 PORT = 5050
+
+# Admin credentials — stored DPAPI-encrypted in admin_secrets.py, not in .env.
+ADMIN_PASSWORD = admin_secrets.get_admin_password()
+EXPORT_PASSWORD = admin_secrets.get_export_password()
+
+
+def admin_required(view):
+    @functools.wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("is_admin"):
+            return redirect(url_for("admin_login", next=request.path))
+        return view(*args, **kwargs)
+    return wrapped
 
 # Quiz is fixed to AI topics only — the user no longer picks a topic.
 AI_TOPICS = ["Prompt Engineering", "Machine Learning", "Deep Learning", "Generative AI"]
@@ -194,16 +209,42 @@ def result():
     return render_template("result.html", record=record, review=review, pass_percentage=PASS_PERCENTAGE)
 
 
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    error = None
+    if request.method == "POST":
+        if ADMIN_PASSWORD and request.form.get("password") == ADMIN_PASSWORD:
+            session["is_admin"] = True
+            return redirect(request.args.get("next") or url_for("admin"))
+        error = "Incorrect password." if ADMIN_PASSWORD else (
+            "Admin password is not configured in admin_secrets.py — admin login is disabled."
+        )
+    return render_template("admin_login.html", error=error)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("is_admin", None)
+    return redirect(url_for("admin_login"))
+
+
 @app.route("/admin")
+@admin_required
 def admin():
     attempts = quiz_store.get_all_attempts()
     return render_template("admin.html", attempts=attempts)
 
 
 @app.route("/admin/download")
+@admin_required
 def admin_download():
-    quiz_store._ensure_workbook()
-    return send_file(quiz_store.EXCEL_PATH, as_attachment=True, download_name="quiz_results.xlsx")
+    if not EXPORT_PASSWORD:
+        return "Export password is not configured in admin_secrets.py — export is disabled.", 500
+    encrypted = quiz_store.export_encrypted(EXPORT_PASSWORD)
+    return send_file(
+        encrypted, as_attachment=True, download_name="quiz_results.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 def _open_browser():
