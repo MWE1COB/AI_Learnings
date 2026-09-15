@@ -3,6 +3,8 @@ import random
 import re
 import os
 import subprocess
+import threading
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 
 from runtime_paths import app_dir, secure_file
@@ -25,6 +27,13 @@ except ImportError:
 # Cache of extracted document text, keyed by (path, mtime) so repeated quiz
 # generations for the same topic don't re-parse the PDF every time.
 _DOC_TEXT_CACHE = {}
+
+# Persistent record of previously-asked questions (per topic+level), so a
+# multi-hour event doesn't serve the same question to two different people.
+_HISTORY_PATH = os.path.join(app_dir(), "question_history.json")
+_HISTORY_CAP = 400  # oldest entries per topic+level are pruned past this
+_HISTORY_HINT_COUNT = 15  # how many recent questions to show the AI as "don't repeat these"
+_history_lock = threading.Lock()
 
 # Bosch AOAI Farm connection settings (loaded from .env)
 _AOAI_ENDPOINT = os.getenv("BOSCH_AOAI_ENDPOINT", "https://aoai-farm.bosch-temp.com/api")
@@ -181,6 +190,10 @@ def generate_quiz_with_ai(topic, level, num_questions=20, single_batch=False, do
     (e.g. documents/can.pdf for topic "CAN"), questions are grounded in that
     document's content first; otherwise questions are generated from general
     knowledge.
+
+    Questions already served for this topic+level (tracked in a local history
+    file) are filtered out and re-requested, so long-running multi-person
+    events don't repeat the same question.
     """
     level_name = SKILL_LEVELS.get(level, "Beginner")
 
@@ -189,32 +202,97 @@ def generate_quiz_with_ai(topic, level, num_questions=20, single_batch=False, do
     if doc_path:
         document_text = _extract_pdf_text(doc_path)
 
+    history_key = f"{topic}|{level_name}"
+    with _history_lock:
+        history = _load_history()
+    entries = history.get(history_key, [])
+    seen_hashes = {e["h"] for e in entries}
+    avoid_questions = [e["q"] for e in entries[-_HISTORY_HINT_COUNT:]]
+
     # Split into small chunks and fire them at AOAI concurrently — wall-clock time
     # is then bounded by one small chunk's latency (~5-10s) instead of a single
     # large request that has to generate all questions serially (~30s+).
     chunk_size = 2
-    num_chunks = (num_questions + chunk_size - 1) // chunk_size
-    chunk_sizes = [chunk_size] * (num_chunks - 1) + [num_questions - chunk_size * (num_chunks - 1)]
 
-    all_questions = []
-    with ThreadPoolExecutor(max_workers=num_chunks) as pool:
-        futures = [
-            pool.submit(_generate_with_aoai, topic, level_name, size, document_text)
-            for size in chunk_sizes
-        ]
-        for future in futures:
-            try:
-                all_questions.extend(future.result())
-            except Exception:
-                continue  # a failed chunk shouldn't sink the whole quiz
+    def _request_batch(count):
+        num_chunks = (count + chunk_size - 1) // chunk_size
+        chunk_sizes = [chunk_size] * (num_chunks - 1) + [count - chunk_size * (num_chunks - 1)]
+        results = []
+        with ThreadPoolExecutor(max_workers=num_chunks) as pool:
+            futures = [
+                pool.submit(_generate_with_aoai, topic, level_name, size, document_text, avoid_questions)
+                for size in chunk_sizes
+            ]
+            for future in futures:
+                try:
+                    results.extend(future.result())
+                except Exception:
+                    continue  # a failed chunk shouldn't sink the whole quiz
+        return results
 
-    if len(all_questions) < 5:
-        raise ValueError(f"Only {len(all_questions)} valid questions generated")
+    unique_questions = []
+    seen_this_run = set(seen_hashes)
+    remaining = num_questions
+    attempts = 0
+    while remaining > 0 and attempts < 4:
+        attempts += 1
+        for q in _request_batch(remaining):
+            q_hash = _question_hash(q["question"])
+            if q_hash in seen_this_run:
+                continue
+            seen_this_run.add(q_hash)
+            q["_hash"] = q_hash
+            unique_questions.append(q)
+        remaining = num_questions - len(unique_questions)
 
-    return all_questions[:num_questions]
+    if len(unique_questions) < 5:
+        raise ValueError(f"Only {len(unique_questions)} valid questions generated")
+
+    final = unique_questions[:num_questions]
+
+    with _history_lock:
+        history = _load_history()
+        entries = history.get(history_key, [])
+        entries.extend({"h": q["_hash"], "q": q["question"]} for q in final)
+        history[history_key] = entries[-_HISTORY_CAP:]
+        _save_history(history)
+
+    for q in final:
+        q.pop("_hash", None)
+
+    return final
 
 
-def _generate_with_aoai(topic, level_name, num_questions, document_text=""):
+def _normalize_question_text(text):
+    """Collapse case/punctuation/whitespace differences so near-identical
+    questions hash the same way."""
+    return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+
+
+def _question_hash(text):
+    return hashlib.sha1(_normalize_question_text(text).encode("utf-8")).hexdigest()
+
+
+def _load_history():
+    if not os.path.exists(_HISTORY_PATH):
+        return {}
+    try:
+        with open(_HISTORY_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_history(history):
+    try:
+        with open(_HISTORY_PATH, "w", encoding="utf-8") as f:
+            json.dump(history, f)
+        secure_file(_HISTORY_PATH)
+    except OSError:
+        pass
+
+
+def _generate_with_aoai(topic, level_name, num_questions, document_text="", avoid_questions=None):
     """Generate a batch of MCQ questions using Bosch AOAI Farm (Azure OpenAI)."""
 
     if document_text:
@@ -229,10 +307,19 @@ REFERENCE MATERIAL:
     else:
         source_instructions = f'No reference material is available for "{topic}", so use your general knowledge.'
 
+    avoid_block = ""
+    if avoid_questions:
+        bullet_list = "\n".join(f"- {q}" for q in avoid_questions)
+        avoid_block = f"""
+
+Do NOT repeat or closely paraphrase any of these previously used questions:
+{bullet_list}
+"""
+
     prompt = f"""Generate exactly {num_questions} challenging multiple-choice quiz questions for the topic "{topic}" at {level_name} difficulty level.
 
 {source_instructions}
-
+{avoid_block}
 IMPORTANT difficulty guidelines:
 - Beginner: avoid trivial syntax questions; focus on concepts and common pitfalls
 - Moderate: scenario-based questions, tricky edge cases

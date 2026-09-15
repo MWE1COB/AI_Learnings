@@ -5,6 +5,7 @@ Automatically opens the quiz in the default browser.
 """
 import functools
 import os
+import random
 import re
 import sys
 import threading
@@ -42,9 +43,26 @@ def admin_required(view):
         return view(*args, **kwargs)
     return wrapped
 
-# Quiz is fixed to AI topics only — the user no longer picks a topic.
-AI_TOPICS = ["Prompt Engineering", "Machine Learning", "Deep Learning", "Generative AI"]
-AI_TOPIC_LABEL = "Artificial Intelligence (" + ", ".join(AI_TOPICS) + ")"
+# The quiz is fixed to AI topics — a topic is picked at random per session (not
+# user-selected) so a long multi-laptop event spreads questions across a wide
+# pool instead of hammering one topic+level combo and repeating questions.
+AI_TOPICS = [
+    "Prompt Engineering",
+    "Machine Learning",
+    "Deep Learning",
+    "Generative AI",
+    "Natural Language Processing",
+    "Computer Vision",
+    "Transformers and Large Language Models",
+    "Retrieval-Augmented Generation (RAG)",
+    "AI Agents",
+    "MLOps and Model Deployment",
+    "Responsible AI and Ethics",
+    "Model Evaluation and Metrics",
+    "Neural Network Architectures",
+    "Reinforcement Learning",
+    "Data Preprocessing and Feature Engineering",
+]
 
 NUM_QUESTIONS = 5  # kept short for live demos
 PER_QUESTION_SEC = 30  # each question is shown for 30 seconds max
@@ -84,7 +102,7 @@ def home():
             return render_template("home.html", errors=errors, form=request.form)
 
         sid = str(uuid.uuid4())
-        _SESSIONS[sid] = {"name": name, "ntid": ntid, "topic": AI_TOPIC_LABEL}
+        _SESSIONS[sid] = {"name": name, "ntid": ntid, "topic": random.choice(AI_TOPICS)}
         session["sid"] = sid
         return redirect(url_for("level"))
 
