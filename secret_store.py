@@ -5,6 +5,13 @@ Uses ctypes only (no extra pip dependency). A value encrypted with encrypt()
 can only be decrypted by the same Windows user on the same machine, so
 copying/sharing the .env file (or the whole project folder) does not leak
 the underlying secret — the recipient must enter their own key.
+
+NOTE: plain DPAPI CRYPTPROTECT_UI_FORBIDDEN with no entropy is *not* enough
+on domain-joined machines: Windows backs up each user's DPAPI master key to
+the domain controller, so the same domain account can transparently decrypt
+the ciphertext on any other domain-joined machine too. To actually bind the
+secret to this one machine, we mix in this machine's MachineGuid (registry,
+not part of the roaming profile) as CryptProtectData's "optional entropy".
 """
 import base64
 import ctypes
@@ -23,6 +30,21 @@ def _to_blob(data: bytes) -> _DATA_BLOB:
     return _DATA_BLOB(len(data), ctypes.cast(buf, ctypes.POINTER(ctypes.c_char)))
 
 
+def _machine_entropy() -> bytes:
+    """A per-machine value that doesn't roam with the domain user profile.
+
+    Falls back to the computer name if the registry key is unreadable, which
+    is still machine-specific (just easier to spoof than the MachineGuid).
+    """
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography") as key:
+            guid, _ = winreg.QueryValueEx(key, "MachineGuid")
+            return guid.encode("utf-8")
+    except Exception:
+        return os.environ.get("COMPUTERNAME", "unknown-machine").encode("utf-8")
+
+
 def is_available() -> bool:
     return os.name == "nt"
 
@@ -34,9 +56,10 @@ def encrypt(plain_text: str) -> str:
     if not is_available():
         return plain_text  # non-Windows: DPAPI unsupported, store as-is
     data_in = _to_blob(plain_text.encode("utf-8"))
+    entropy = _to_blob(_machine_entropy())
     data_out = _DATA_BLOB()
     ok = ctypes.windll.crypt32.CryptProtectData(
-        ctypes.byref(data_in), None, None, None, None, 0, ctypes.byref(data_out)
+        ctypes.byref(data_in), None, ctypes.byref(entropy), None, None, 0, ctypes.byref(data_out)
     )
     if not ok:
         raise ctypes.WinError()
@@ -63,9 +86,10 @@ def decrypt(stored_value: str) -> str:
     except Exception:
         return ""
     data_in = _to_blob(ciphertext)
+    entropy = _to_blob(_machine_entropy())
     data_out = _DATA_BLOB()
     ok = ctypes.windll.crypt32.CryptUnprotectData(
-        ctypes.byref(data_in), None, None, None, None, 0, ctypes.byref(data_out)
+        ctypes.byref(data_in), None, ctypes.byref(entropy), None, None, 0, ctypes.byref(data_out)
     )
     if not ok:
         return ""

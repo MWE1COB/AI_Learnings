@@ -29,7 +29,7 @@ app.secret_key = os.urandom(24).hex()
 HOST = "0.0.0.0"  # listen on all interfaces so other laptops on the same network can connect
 PORT = 5050
 
-# Admin credentials — stored DPAPI-encrypted in admin_secrets.py, not in .env.
+# Admin credentials — plain constants in admin_secrets.py.
 ADMIN_PASSWORD = admin_secrets.get_admin_password()
 EXPORT_PASSWORD = admin_secrets.get_export_password()
 
