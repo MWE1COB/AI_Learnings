@@ -16,7 +16,58 @@ not part of the roaming profile) as CryptProtectData's "optional entropy".
 import base64
 import ctypes
 import ctypes.wintypes as wt
+import hashlib
 import os
+
+_PORTABLE_PREFIX = "penc:"
+# Baked into the app on purpose: this makes portable_encrypt/decrypt reversible
+# by anyone with the source/exe, so it's obfuscation-at-rest (keeps the key out
+# of plain sight in .env), not a secret boundary. Use encrypt()/decrypt() above
+# instead when the value must not be recoverable outside this machine.
+_PORTABLE_KEY = b"AI_Learnings-DemoQuiz-portable-key-v1"
+
+
+def _portable_keystream(length: int, nonce: bytes) -> bytes:
+    out = b""
+    counter = 0
+    while len(out) < length:
+        out += hashlib.sha256(_PORTABLE_KEY + nonce + counter.to_bytes(4, "big")).digest()
+        counter += 1
+    return out[:length]
+
+
+def portable_encrypt(plain_text: str) -> str:
+    """Return an opaque "penc:<base64>" ciphertext that decrypts the same way
+    on any machine (unlike encrypt(), which is bound to this user+machine).
+    """
+    if not plain_text:
+        return ""
+    data = plain_text.encode("utf-8")
+    nonce = os.urandom(8)
+    keystream = _portable_keystream(len(data), nonce)
+    cipher = bytes(a ^ b for a, b in zip(data, keystream))
+    return _PORTABLE_PREFIX + base64.b64encode(nonce + cipher).decode("ascii")
+
+
+def portable_decrypt(stored_value: str) -> str:
+    """Reverse of portable_encrypt(). Returns the value unchanged if it isn't
+    portable-encrypted, or "" if decoding fails.
+    """
+    if not stored_value:
+        return ""
+    if not stored_value.startswith(_PORTABLE_PREFIX):
+        return stored_value
+    try:
+        raw = base64.b64decode(stored_value[len(_PORTABLE_PREFIX):])
+    except Exception:
+        return ""
+    nonce, cipher = raw[:8], raw[8:]
+    keystream = _portable_keystream(len(cipher), nonce)
+    data = bytes(a ^ b for a, b in zip(cipher, keystream))
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return ""
 
 _ENC_PREFIX = "dpapi:"
 

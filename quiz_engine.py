@@ -40,12 +40,15 @@ _AOAI_ENDPOINT = os.getenv("BOSCH_AOAI_ENDPOINT", "https://aoai-farm.bosch-temp.
 _AOAI_MODEL    = os.getenv("BOSCH_AOAI_MODEL", "askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18")
 _AOAI_VERSION  = os.getenv("BOSCH_AOAI_API_VERSION", "2024-08-01-preview")
 
+# Stored "penc:"-encrypted in .env (see secret_store.portable_encrypt) — this is
+# portable across machines/users by design, so a shared exe + .env just works.
 _AOAI_KEY_RAW = os.getenv("BOSCH_AOAI_API_KEY", "")
-_AOAI_KEY = secret_store.decrypt(_AOAI_KEY_RAW)
-if _AOAI_KEY_RAW and not _AOAI_KEY_RAW.startswith("dpapi:"):
-    # One-time migration: re-encrypt a legacy plaintext key in place.
+_AOAI_KEY = secret_store.portable_decrypt(_AOAI_KEY_RAW)
+if _AOAI_KEY_RAW and not _AOAI_KEY_RAW.startswith("penc:"):
+    # One-time migration: encrypt a legacy plaintext key in place.
+    _AOAI_KEY = _AOAI_KEY_RAW
     try:
-        secret_store.set_env_value(_ENV_PATH, "BOSCH_AOAI_API_KEY", secret_store.encrypt(_AOAI_KEY_RAW))
+        secret_store.set_env_value(_ENV_PATH, "BOSCH_AOAI_API_KEY", secret_store.portable_encrypt(_AOAI_KEY_RAW))
         secure_file(_ENV_PATH)
     except OSError:
         pass
@@ -400,11 +403,11 @@ def configure_aoai(api_key):
 
 
 def persist_api_key(api_key):
-    """Configure the key for this session AND save it to .env, DPAPI-encrypted
-    so the on-disk value is only readable by this Windows user on this machine.
+    """Configure the key for this session AND save it to .env, portably
+    encrypted so it stays readable on any machine the exe/.env is shared to.
     """
     configure_aoai(api_key)
-    secret_store.set_env_value(_ENV_PATH, "BOSCH_AOAI_API_KEY", secret_store.encrypt(api_key))
+    secret_store.set_env_value(_ENV_PATH, "BOSCH_AOAI_API_KEY", secret_store.portable_encrypt(api_key))
     secure_file(_ENV_PATH)
     return True
 
