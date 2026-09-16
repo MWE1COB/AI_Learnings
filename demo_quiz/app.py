@@ -17,7 +17,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 
 # Reuse the AI question generator + timer config from the main project.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from quiz_engine import generate_quiz_with_ai, GENAI_AVAILABLE, PASS_PERCENTAGE  # noqa: E402
+from quiz_engine import generate_quiz_with_ai, generate_questions_from_docs, GENAI_AVAILABLE, PASS_PERCENTAGE  # noqa: E402
 from database import SKILL_LEVELS  # noqa: E402
 from runtime_paths import app_dir  # noqa: E402
 
@@ -64,10 +64,12 @@ AI_TOPICS = [
     "Data Preprocessing and Feature Engineering",
 ]
 
-NUM_QUESTIONS = 5  # kept short for live demos
-PER_QUESTION_SEC = 30  # each question is shown for 30 seconds max
-QUIZ_DURATION_SEC = NUM_QUESTIONS * PER_QUESTION_SEC  # fixed 2:30 quiz for demos
-DOCUMENTS_DIR = os.path.join(app_dir(), "documents")
+NUM_QUESTIONS = 10          # 5 AI-general + 5 from Doc folder
+AI_QUESTIONS = 5
+DOC_QUESTIONS = 5
+PER_QUESTION_SEC = 30       # each question is shown for 30 seconds max
+QUIZ_DURATION_SEC = NUM_QUESTIONS * PER_QUESTION_SEC
+DOCUMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Doc")
 
 # In-memory store for in-progress quiz sessions, keyed by a server-side session id.
 # (Keeps the browser cookie small — only the session id is stored client-side.)
@@ -145,14 +147,53 @@ def generate():
     if not GENAI_AVAILABLE:
         return {"ok": False, "error": "AI service is not configured (missing API key)."}, 500
 
-    try:
-        questions = generate_quiz_with_ai(
-            qs["topic"], qs["level"], NUM_QUESTIONS, single_batch=True, documents_dir=DOCUMENTS_DIR
-        )
-    except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "error": str(exc)}, 500
+    ai_questions = []
+    doc_questions = []
+    ai_error = doc_error = None
 
-    qs["questions"] = questions
+    def _gen_ai():
+        nonlocal ai_questions, ai_error
+        try:
+            ai_questions = generate_quiz_with_ai(
+                qs["topic"], qs["level"], AI_QUESTIONS, single_batch=True
+            )
+        except Exception as exc:  # noqa: BLE001
+            ai_error = exc
+
+    def _gen_doc():
+        nonlocal doc_questions, doc_error
+        try:
+            # No ai_stems yet (parallel); dedup against AI batch after both join
+            doc_questions = generate_questions_from_docs(
+                DOCUMENTS_DIR, qs["level"], DOC_QUESTIONS
+            )
+        except Exception as exc:  # noqa: BLE001
+            doc_error = exc
+
+    # Run both generators in parallel — halves wall-clock time to ~one request's latency
+    ai_thread = threading.Thread(target=_gen_ai)
+    doc_thread = threading.Thread(target=_gen_doc)
+    ai_thread.start()
+    doc_thread.start()
+    ai_thread.join()
+    doc_thread.join()
+
+    if ai_error and doc_error:
+        return {"ok": False, "error": f"AI questions: {ai_error}; Doc questions: {doc_error}"}, 500
+    if ai_error:
+        return {"ok": False, "error": str(ai_error)}, 500
+    if doc_error:
+        return {"ok": False, "error": str(doc_error)}, 500
+
+    # Drop any doc question whose text closely matches an AI question
+    from quiz_engine import _question_hash  # noqa: PLC0415
+    ai_hashes = {_question_hash(q["question"]) for q in ai_questions}
+    doc_questions = [q for q in doc_questions if _question_hash(q["question"]) not in ai_hashes]
+
+    combined = ai_questions + doc_questions
+    random.shuffle(combined)
+
+    qs["questions"] = combined
     qs["duration_sec"] = QUIZ_DURATION_SEC
     qs["start_time"] = time.time()
     return {"ok": True}

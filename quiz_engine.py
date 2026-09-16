@@ -221,6 +221,7 @@ def generate_quiz_with_ai(topic, level, num_questions=20, single_batch=False, do
         num_chunks = (count + chunk_size - 1) // chunk_size
         chunk_sizes = [chunk_size] * (num_chunks - 1) + [count - chunk_size * (num_chunks - 1)]
         results = []
+        last_exc = None
         with ThreadPoolExecutor(max_workers=num_chunks) as pool:
             futures = [
                 pool.submit(_generate_with_aoai, topic, level_name, size, document_text, avoid_questions)
@@ -229,8 +230,10 @@ def generate_quiz_with_ai(topic, level, num_questions=20, single_batch=False, do
             for future in futures:
                 try:
                     results.extend(future.result())
-                except Exception:
-                    continue  # a failed chunk shouldn't sink the whole quiz
+                except Exception as exc:
+                    last_exc = exc  # a failed chunk shouldn't sink the whole quiz
+        if not results and last_exc is not None:
+            raise last_exc
         return results
 
     unique_questions = []
@@ -392,6 +395,93 @@ def _parse_questions_json(text):
         except json.JSONDecodeError:
             continue
     return questions
+
+
+def _extract_all_docs_text(documents_dir, max_chars_per_doc=3000):
+    """Return combined text from every PDF in documents_dir (each capped separately)."""
+    if PdfReader is None or not documents_dir or not os.path.isdir(documents_dir):
+        return ""
+    parts = []
+    for fname in sorted(os.listdir(documents_dir)):
+        if not fname.lower().endswith(".pdf"):
+            continue
+        path = os.path.join(documents_dir, fname)
+        text = _extract_pdf_text(path, max_chars=max_chars_per_doc)
+        if text:
+            stem = os.path.splitext(fname)[0]
+            parts.append(f"=== {stem} ===\n{text}")
+    return "\n\n".join(parts)
+
+
+def generate_questions_from_docs(documents_dir, level, num_questions=5, avoid_questions=None):
+    """Generate MCQ questions grounded entirely in the PDFs found in documents_dir.
+
+    Questions are generated at the given difficulty level and avoid any stems
+    listed in avoid_questions (to prevent overlap with the AI-topic batch).
+    """
+    level_name = SKILL_LEVELS.get(level, "Beginner")
+    combined_text = _extract_all_docs_text(documents_dir)
+    if not combined_text:
+        raise ValueError("No readable PDF content found in the documents folder.")
+
+    history_key = f"__docs__|{level_name}"
+    with _history_lock:
+        history = _load_history()
+    entries = history.get(history_key, [])
+    seen_hashes = {e["h"] for e in entries}
+    doc_avoid = [e["q"] for e in entries[-_HISTORY_HINT_COUNT:]]
+    if avoid_questions:
+        doc_avoid = list(avoid_questions) + doc_avoid
+
+    chunk_size = 2
+
+    def _request_batch(count):
+        num_chunks = (count + chunk_size - 1) // chunk_size
+        chunk_sizes = [chunk_size] * (num_chunks - 1) + [count - chunk_size * (num_chunks - 1)]
+        results = []
+        last_exc = None
+        with ThreadPoolExecutor(max_workers=num_chunks) as pool:
+            futures = [
+                pool.submit(_generate_with_aoai, "the provided documents", level_name, size, combined_text, doc_avoid)
+                for size in chunk_sizes
+            ]
+            for future in futures:
+                try:
+                    results.extend(future.result())
+                except Exception as exc:
+                    last_exc = exc
+        if not results and last_exc is not None:
+            raise last_exc
+        return results
+
+    unique_questions = []
+    seen_this_run = set(seen_hashes)
+    remaining = num_questions
+    attempts = 0
+    while remaining > 0 and attempts < 4:
+        attempts += 1
+        for q in _request_batch(remaining):
+            q_hash = _question_hash(q["question"])
+            if q_hash in seen_this_run:
+                continue
+            seen_this_run.add(q_hash)
+            q["_hash"] = q_hash
+            unique_questions.append(q)
+        remaining = num_questions - len(unique_questions)
+
+    final = unique_questions[:num_questions]
+
+    with _history_lock:
+        history = _load_history()
+        entries = history.get(history_key, [])
+        entries.extend({"h": q["_hash"], "q": q["question"]} for q in final)
+        history[history_key] = entries[-_HISTORY_CAP:]
+        _save_history(history)
+
+    for q in final:
+        q.pop("_hash", None)
+
+    return final
 
 
 def configure_aoai(api_key):

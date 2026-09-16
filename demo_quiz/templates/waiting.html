@@ -2,33 +2,308 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Preparing...</title>
+<title>Preparing your quiz…</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<script src="{{ url_for('static', filename='particles.js') }}" defer></script>
+<style>
+/* ── Loading page overrides ─────────────────────────────────────────── */
+.loading-card {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 28px;
+  padding: 48px 52px 44px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+  animation: cardPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes cardPop {
+  from { opacity:0; transform: scale(0.85) translateY(30px); }
+  to   { opacity:1; transform: scale(1)    translateY(0); }
+}
+
+/* ── Brain orbit animation ──────────────────────────────────────────── */
+.orbit-wrap {
+  position: relative;
+  width: 120px; height: 120px;
+  margin: 0 auto 28px;
+}
+.brain-icon {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52px;
+  animation: brainPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px rgba(99,102,241,0.8));
+}
+@keyframes brainPulse {
+  0%,100% { transform: scale(1);    filter: drop-shadow(0 0 14px rgba(99,102,241,0.7)); }
+  50%      { transform: scale(1.12); filter: drop-shadow(0 0 28px rgba(6,182,212,0.9)); }
+}
+.orbit-ring {
+  position: absolute; inset: 0;
+  border: 2px dashed rgba(255,255,255,0.18);
+  border-radius: 50%;
+  animation: spinRing 4s linear infinite;
+}
+@keyframes spinRing { to { transform: rotate(360deg); } }
+.orbit-dot {
+  position: absolute;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  top: -5px; left: 50%; margin-left: -5px;
+  animation: dotColor 2s ease-in-out infinite alternate;
+}
+@keyframes dotColor {
+  from { background: #6366f1; box-shadow: 0 0 8px #6366f1; }
+  to   { background: #06b6d4; box-shadow: 0 0 8px #06b6d4; }
+}
+.orbit-ring-2 {
+  position: absolute;
+  inset: 14px;
+  border: 2px dashed rgba(255,255,255,0.1);
+  border-radius: 50%;
+  animation: spinRing 6s linear infinite reverse;
+}
+.orbit-dot-2 {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  bottom: -4px; left: 50%; margin-left: -4px;
+  background: #a78bfa;
+  box-shadow: 0 0 8px #a78bfa;
+}
+
+/* ── Title ──────────────────────────────────────────────────────────── */
+.load-title {
+  font-size: 26px; font-weight: 800;
+  color: #fff;
+  margin: 0 0 6px;
+  letter-spacing: -0.4px;
+}
+.load-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.65);
+  margin: 0 0 28px;
+}
+
+/* ── Progress bar ───────────────────────────────────────────────────── */
+.progress-track {
+  height: 6px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #6366f1, #06b6d4, #a78bfa);
+  background-size: 200% 100%;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  animation: shimmer 2s linear infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+.progress-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Fact ticker ────────────────────────────────────────────────────── */
+.fact-box {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.55;
+  min-height: 64px;
+  display: flex; align-items: center; gap: 12px;
+  text-align: left;
+  transition: opacity 0.4s ease;
+}
+.fact-emoji { font-size: 22px; flex-shrink: 0; }
+
+/* ── Floating sparkles ──────────────────────────────────────────────── */
+.sparkles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.sparkle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  animation: floatUp linear infinite;
+}
+@keyframes floatUp {
+  0%   { opacity: 0;   transform: translateY(0)   scale(0.5); }
+  15%  { opacity: 0.9; }
+  85%  { opacity: 0.6; }
+  100% { opacity: 0;   transform: translateY(-100vh) scale(1.2); }
+}
+
+/* ── Error state ────────────────────────────────────────────────────── */
+.load-error {
+  margin-top: 18px;
+  color: #fca5a5;
+  font-size: 13px;
+  display: none;
+}
+</style>
 </head>
 <body>
-<img class="site-logo" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
-<div class="page-center">
-  <div class="card fade-in">
-    <div class="spinner"></div>
-    <h1 class="title">Generating...</h1>
-    <p class="subtitle" id="status-text">AI is crafting questions</p>
-    <p class="error" id="error-text"></p>
+<img class="site-logo" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch" onerror="this.style.display='none'">
+
+<!-- Floating sparkles background -->
+<div class="sparkles" id="sparkles"></div>
+
+<div class="page-center" style="z-index:1; position:relative;">
+  <div class="loading-card">
+
+    <!-- Animated brain with orbit rings -->
+    <div class="orbit-wrap">
+      <div class="orbit-ring"><div class="orbit-dot"></div></div>
+      <div class="orbit-ring-2"><div class="orbit-dot-2"></div></div>
+      <div class="brain-icon">🧠</div>
+    </div>
+
+    <h1 class="load-title" id="phase-title">Crafting Your Quiz</h1>
+    <p class="load-sub" id="phase-sub">AI is thinking hard — this takes ~15 seconds</p>
+
+    <!-- Progress bar -->
+    <div class="progress-track">
+      <div class="progress-fill" id="prog-fill"></div>
+    </div>
+    <p class="progress-label" id="prog-label">Warming up…</p>
+
+    <!-- Did-you-know ticker -->
+    <div class="fact-box">
+      <span class="fact-emoji" id="fact-emoji">💡</span>
+      <span id="fact-text">Loading a fun fact…</span>
+    </div>
+
+    <p class="load-error" id="error-text"></p>
   </div>
 </div>
+
 <script>
+/* ── Sparkle generator ────────────────────────────────────────────── */
+(function() {
+  const wrap = document.getElementById("sparkles");
+  const colors = ["#6366f1","#06b6d4","#a78bfa","#f472b6","#facc15","#34d399"];
+  for (let i = 0; i < 30; i++) {
+    const s = document.createElement("div");
+    s.className = "sparkle";
+    const size = 4 + Math.random() * 8;
+    s.style.cssText = [
+      `width:${size}px`, `height:${size}px`,
+      `left:${Math.random()*100}%`,
+      `bottom:${-size}px`,
+      `background:${colors[Math.random()*colors.length|0]}`,
+      `animation-duration:${6 + Math.random()*10}s`,
+      `animation-delay:${Math.random()*8}s`,
+    ].join(";");
+    wrap.appendChild(s);
+  }
+})();
+
+/* ── Fun facts ────────────────────────────────────────────────────── */
+const FACTS = [
+  { e:"🤖", t:"GPT-4 was trained on roughly 1 trillion tokens of text — more words than you could read in 3,000 lifetimes." },
+  { e:"🧬", t:"Transformers, the backbone of modern AI, were introduced in the 2017 paper 'Attention Is All You Need' by Google researchers." },
+  { e:"⚡", t:"FlexRay can transfer data at up to 10 Mbit/s — fast enough to transmit the entire works of Shakespeare in under a second." },
+  { e:"🔗", t:"The LIN bus was designed as a low-cost complement to CAN, running at just 20 kbit/s for simple sensors and actuators." },
+  { e:"🌐", t:"RAG (Retrieval-Augmented Generation) lets AI answer questions about documents it was never trained on — like giving it a real-time library." },
+  { e:"🎯", t:"Prompt engineering can increase AI output quality by over 40% without changing any model weights — just by choosing better words." },
+  { e:"🔥", t:"Deep learning was largely ignored until 2012, when AlexNet crushed the ImageNet competition and sparked the modern AI revolution." },
+  { e:"📦", t:"Git stores snapshots of your entire project, not just diffs — making time-travel through history blazing fast." },
+  { e:"🧠", t:"The human brain has ~86 billion neurons. GPT-4 has ~1.8 trillion parameters. Different architectures, similar goal: pattern recognition." },
+  { e:"🚗", t:"FlexRay's deterministic timing makes it ideal for safety-critical automotive systems like steer-by-wire and brake-by-wire." },
+  { e:"🎬", t:"AI video-to-text transcription can process a 1-hour video in under 2 minutes — 30× faster than a human transcriber." },
+  { e:"💬", t:"Large Language Models predict one token at a time — yet they can write poetry, debug code, and explain quantum physics." },
+];
+
+let factIdx = Math.floor(Math.random() * FACTS.length);
+const factEmoji = document.getElementById("fact-emoji");
+const factText  = document.getElementById("fact-text");
+const factBox   = factText.closest(".fact-box");
+
+function showFact(idx) {
+  factBox.style.opacity = 0;
+  setTimeout(() => {
+    const f = FACTS[idx % FACTS.length];
+    factEmoji.textContent = f.e;
+    factText.textContent  = f.t;
+    factBox.style.opacity = 1;
+  }, 400);
+}
+showFact(factIdx);
+setInterval(() => { factIdx++; showFact(factIdx); }, 4500);
+
+/* ── Progress animation ───────────────────────────────────────────── */
+const fill  = document.getElementById("prog-fill");
+const label = document.getElementById("prog-label");
+const title = document.getElementById("phase-title");
+const sub   = document.getElementById("phase-sub");
+
+const PHASES = [
+  { pct: 10, title: "🧠  Waking up the AI…",       sub: "Poking the neural network with a stick" },
+  { pct: 25, title: "⚡  Neurons firing!",           sub: "The AI just had its 3rd espresso" },
+  { pct: 42, title: "🔍  Reading the docs…",         sub: "Speed-reading at 10,000 words per second" },
+  { pct: 58, title: "🎲  Cooking up questions…",     sub: "Adding a pinch of difficulty & a dash of chaos" },
+  { pct: 72, title: "🤯  Getting nerdy…",            sub: "Digging into the really spicy parts" },
+  { pct: 85, title: "🎨  Final polish…",             sub: "Making sure the questions look sharp" },
+  { pct: 94, title: "🚀  Almost ready!",             sub: "Buckle up — quiz incoming!" },
+];
+
+let phaseIdx = 0;
+function applyPhase(p) {
+  fill.style.width  = p.pct + "%";
+  label.textContent = "";
+  title.textContent = p.title;
+  sub.textContent   = p.sub;
+}
+applyPhase(PHASES[0]);
+
+// Advance through visual phases on a timer (purely cosmetic)
+const phaseInterval = setInterval(() => {
+  phaseIdx++;
+  if (phaseIdx < PHASES.length) {
+    applyPhase(PHASES[phaseIdx]);
+  }
+}, 3200);
+
+/* ── Fire the actual generation request ──────────────────────────── */
 fetch("{{ url_for('generate') }}")
   .then(r => r.json().then(data => ({ ok: r.ok, data })))
   .then(({ ok, data }) => {
+    clearInterval(phaseInterval);
     if (ok && data.ok) {
-      window.location.href = "{{ url_for('quiz') }}";
+      fill.style.width  = "100%";
+      label.textContent = "Ready! 🚀";
+      title.textContent = "Let's go!";
+      sub.textContent   = "Redirecting you now…";
+      setTimeout(() => { window.location.href = "{{ url_for('quiz') }}"; }, 600);
     } else {
-      document.getElementById("error-text").textContent = data.error || "Something went wrong.";
-      document.getElementById("status-text").textContent = "Failed to generate.";
+      fill.style.width  = "100%";
+      fill.style.background = "#e11d48";
+      title.textContent = "Generation Failed";
+      sub.textContent   = "";
+      label.textContent = "";
+      const err = document.getElementById("error-text");
+      err.textContent = data.error || "Something went wrong.";
+      err.style.display = "block";
     }
   })
   .catch(() => {
-    document.getElementById("error-text").textContent = "Network error while generating.";
+    clearInterval(phaseInterval);
+    const err = document.getElementById("error-text");
+    err.textContent = "Network error while generating. Please try again.";
+    err.style.display = "block";
   });
 </script>
 </body>
