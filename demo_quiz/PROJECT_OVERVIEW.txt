@@ -1,0 +1,226 @@
+================================================================================
+               AI DEMO QUIZ APPLICATION — PROJECT OVERVIEW
+              Prepared for Manager Presentation | September 2026
+================================================================================
+
+------------------------------------------------------------------------
+1. WHAT IS THIS PROJECT?
+------------------------------------------------------------------------
+The AI Demo Quiz is a web-based, AI-powered quiz platform built to run
+live during team events, workshops, manager demos, or onboarding sessions.
+It runs entirely on a local machine (no cloud hosting needed) and lets
+multiple participants join from their own devices — laptops, phones, or
+tablets — on the same Wi-Fi network.
+
+The quiz tests participants on Artificial Intelligence topics and
+dynamically generates new questions every session using the Bosch AOAI
+Farm (GPT-4o Mini via Azure OpenAI), so the questions are never the same twice.
+
+------------------------------------------------------------------------
+2. HOW DOES IT WORK — STEP BY STEP
+------------------------------------------------------------------------
+
+STEP 1 — START THE APP
+  The host (organizer) runs the app on their laptop with a single command:
+       python app.py
+  The app opens automatically in the browser and prints a local network
+  URL (e.g., http://192.168.x.x:5050) that participants can open on
+  their own devices.
+
+STEP 1 — PARTICIPANT REGISTRATION
+  Each participant opens the URL and enters:
+    • Their Full Name
+    • Their NTID (Employee ID)
+  Input is validated (letters only for name, alphanumeric for NTID).
+
+STEP 4 — AI GENERATES QUESTIONS (Live, Real-Time)
+  Two sets of questions are generated in parallel:
+    a) 5 questions from the Bosch AOAI Farm (GPT-4o Mini) on a randomly
+       assigned AI topic (from a pool of 15 topics like Prompt Engineering, RAG, LLMs, etc.)
+    b) 5 questions extracted from internal company documents in the Doc folder
+  Both sets are combined and shuffled, giving 10 unique questions per session.
+  Duplicate questions are automatically detected and removed.
+
+STEP 5 — TAKE THE QUIZ
+  • The quiz has 10 questions with 4 answer choices each (MCQ format).
+  • Each question has a 30-second timer.
+  • The full quiz runs for a maximum of 5 minutes (300 seconds).
+  • Participants answer and submit at their own pace.
+
+STEP 6 — RESULTS & REVIEW
+  After submission, participants instantly see:
+    • Their score (e.g., 7 out of 10)
+    • Their percentage
+    • Pass / Fail status (passing mark is configurable)
+    • Next recommended level if they passed
+    • Full question-by-question review showing correct vs. selected answers
+
+STEP 7 — ADMIN DASHBOARD (Host/Manager View)
+  The host logs into the admin panel at:
+       http://localhost:5050/admin
+  The admin dashboard shows a live table of all participants with:
+    • Name, NTID, Topic, Level, Score, Percentage, Time Taken, Submission Time
+  Results can be exported as a password-protected Excel file (.xlsx)
+  for offline analysis or HR reporting.
+
+------------------------------------------------------------------------
+3. AI TOPICS COVERED IN THE QUIZ
+------------------------------------------------------------------------
+Questions are drawn from a rotating pool of 15 AI topics:
+
+  1.  Prompt Engineering
+  2.  Machine Learning
+  3.  Deep Learning
+  4.  Generative AI
+  5.  Natural Language Processing (NLP)
+  6.  Computer Vision
+  7.  Transformers and Large Language Models (LLMs)
+  8.  Retrieval-Augmented Generation (RAG)
+  9.  AI Agents
+  10. MLOps and Model Deployment
+  11. Responsible AI and Ethics
+  12. Model Evaluation and Metrics
+  13. Neural Network Architectures
+  14. Reinforcement Learning
+  15. Data Preprocessing and Feature Engineering
+
+Each participant gets a randomly assigned topic — this spreads the question
+pool across all topics during large group events, reducing repetition.
+
+------------------------------------------------------------------------
+4. KEY FEATURES & ADVANTAGES
+------------------------------------------------------------------------
+
+  DYNAMIC AI QUESTION GENERATION
+    Questions are generated fresh each session using the Bosch AOAI Farm
+    (GPT-4o Mini via Azure OpenAI — internal Bosch infrastructure).
+    No static question bank means participants cannot memorize answers
+    between sessions. Questions match the selected difficulty level.
+
+  DOCUMENT-BASED QUESTIONS
+    The app reads internal company PDFs/documents from the Doc folder
+    and generates questions from them. This makes the quiz relevant to
+    Bosch-specific AI materials, guidelines, or training content.
+
+  MULTI-DEVICE SUPPORT
+    The server listens on all network interfaces (0.0.0.0:5050), so
+    any device on the same Wi-Fi can participate. No app installation
+    required — just a browser.
+
+  ENCRYPTED RESULT STORAGE
+    All quiz results are saved in a password-protected Excel file
+    (demo_results.xlsx) on the host machine. The file is encrypted
+    at rest using the msoffcrypto library, so it cannot be opened
+    without the export password.
+
+  ADMIN CONTROL PANEL
+    A password-protected admin page lets the host monitor results
+    in real time and export a clean Excel report after the session.
+
+  NO REPEATED QUESTIONS
+    An automatic deduplication algorithm (question hashing) ensures
+    that questions generated from documents do not overlap with
+    AI-generated questions in the same session.
+
+  AUTOMATIC BROWSER LAUNCH
+    The app auto-opens the browser when started, minimizing setup
+    steps for the host.
+
+  SELF-CONTAINED & PORTABLE
+    The app runs entirely locally — no internet required for hosting,
+    no cloud services needed (only the AI API call goes out).
+    Can also be packaged as a standalone .exe for machines without Python.
+
+------------------------------------------------------------------------
+5. TECHNOLOGY STACK
+------------------------------------------------------------------------
+
+  Backend Framework  : Python / Flask
+  AI Question Engine : Bosch AOAI Farm — GPT-4o Mini (Azure OpenAI, internal)
+  Document Parsing   : PyPDF (reads PDF files from Doc folder)
+  Result Storage     : openpyxl (Excel) + msoffcrypto (encryption)
+  Frontend           : HTML / CSS / JavaScript (Particles.js for UI)
+  Session Management : Flask server-side sessions (UUID-keyed)
+  Packaging          : PyInstaller (for standalone .exe distribution)
+
+------------------------------------------------------------------------
+6. WHERE AND WHEN CAN THIS BE USED?
+------------------------------------------------------------------------
+
+  TEAM WORKSHOPS & TRAINING EVENTS
+    Run the quiz at the end of an AI workshop to check comprehension.
+    Results show which topics need more explanation.
+
+  ONBOARDING SESSIONS
+    Use it to assess new joiners' AI knowledge baseline and assign
+    appropriate learning paths or training levels.
+
+  MANAGER / LEADERSHIP DEMOS
+    Showcase the team's AI capabilities live. The dynamic question
+    generation itself demonstrates practical Generative AI usage.
+
+  HACKATHONS & INNOVATION DAYS
+    A fun, competitive quiz format works well as an icebreaker or
+    team-building activity at internal Bosch events.
+
+  SKILL ASSESSMENT & BENCHMARKING
+    HR or L&D teams can use the exported Excel report to track
+    AI skill levels across teams, departments, or locations.
+
+  KNOWLEDGE CHECKS AFTER AI TRAINING PROGRAMS
+    Pair with internal AI learning curricula to verify that training
+    content (loaded into the Doc folder) has been understood.
+
+  MULTI-LOCATION EVENTS (Same Wi-Fi)
+    Participants in the same room or building can join from their own
+    devices simultaneously with zero setup on their side.
+
+------------------------------------------------------------------------
+7. SECURITY HIGHLIGHTS
+------------------------------------------------------------------------
+
+  • Admin panel is password-protected (separate from participant flow).
+  • Result file is encrypted on disk — copying the file without the
+    password gives no access to the data.
+  • Exported Excel file is also password-protected for safe sharing.
+  • Participant input is validated server-side to prevent injection.
+  • Browser sessions use server-side storage (only a UUID in the cookie).
+
+------------------------------------------------------------------------
+8. HOW TO RUN — QUICK REFERENCE FOR THE HOST
+------------------------------------------------------------------------
+
+  Prerequisites:
+    - Python 3.9+ installed
+    - Run once: pip install -r requirements.txt
+    - Bosch AOAI Farm API key configured in .env (for AI question generation)
+
+  Start the quiz session:
+    cd demo_quiz
+    python app.py
+
+  Admin login:
+    URL      : http://localhost:5050/admin
+    Password : (configured in admin_secrets.py)
+
+  Export results:
+    Click "Download Results" in the admin dashboard.
+    The downloaded Excel file is password-protected.
+
+  Share with participants:
+    Tell them to open: http://<your-laptop-IP>:5050
+    (The IP is printed in the terminal when the app starts.)
+
+------------------------------------------------------------------------
+9. SUMMARY
+------------------------------------------------------------------------
+This project demonstrates how Generative AI can be embedded into a
+practical, day-to-day business tool — not just as a chatbot, but as
+an intelligent content generator that creates context-aware, level-
+appropriate quiz questions on demand. It is production-ready for
+internal events, requires minimal setup, and produces structured,
+exportable data for follow-up analysis.
+
+================================================================================
+                          END OF DOCUMENT
+================================================================================

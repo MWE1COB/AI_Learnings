@@ -11,33 +11,62 @@
 <div class="admin-wrap fade-in">
   <div class="admin-header">
     <h1 class="title">📊 Admin Dashboard</h1>
-    <a href="{{ url_for('admin_download') }}" class="btn-primary small">Download Excel</a>
-    <a href="{{ url_for('admin_logout') }}" class="btn-primary small">Log out</a>
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+      <button type="button" class="btn-primary small" onclick="document.getElementById('apikey-modal').style.display='flex'">🔑 Update API Key</button>
+      <a href="{{ url_for('admin_download') }}" class="btn-primary small">Download Excel</a>
+      <a href="{{ url_for('admin_logout') }}" class="btn-primary small">Log out</a>
+    </div>
   </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
   <table class="admin-table">
     <thead>
       <tr>
-        <th>Name</th><th>NTID</th><th>Topic</th><th>Level</th>
-        <th>Score</th><th>Percentage</th><th>Duration (s)</th><th>Submitted At</th>
+        <th>#</th><th>Name</th><th>NTID</th><th>Score</th><th>Percentage</th><th>Duration</th><th>Action</th>
       </tr>
     </thead>
     <tbody>
       {% for a in attempts %}
-      <tr>
+      <tr{% if loop.index == 1 %} class="rank-gold"{% elif loop.index == 2 %} class="rank-silver"{% elif loop.index == 3 %} class="rank-bronze"{% endif %}>
+        <td>
+          {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+        </td>
         <td>{{ a.name }}</td>
         <td>{{ a.ntid }}</td>
-        <td>{{ a.topic }}</td>
-        <td>{{ a.level }}</td>
         <td>{{ a.score }}/{{ a.total }}</td>
-        <td>{{ a.percentage }}%</td>
-        <td>{{ a.duration_sec }}</td>
-        <td>{{ a.submitted_at }}</td>
+        <td><strong>{{ a.percentage }}%</strong></td>
+        <td>{{ "%d:%02d"|format(a.duration_sec // 60, a.duration_sec % 60) }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin_reset_attempt', ntid=a.ntid) }}"
+                onsubmit="return confirm('Reset attempt for {{ a.name }} ({{ a.ntid }})? They will be able to retake the quiz.')">
+            <button type="submit" class="btn-reset">↺ Reset</button>
+          </form>
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="8" class="empty">No attempts yet.</td></tr>
+      <tr><td colspan="7" class="empty">No attempts yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
+</div>
+
+<!-- API Key modal -->
+<div id="apikey-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:2rem;width:min(420px,90vw);box-shadow:0 20px 50px rgba(0,0,0,0.3);position:relative;">
+    <button type="button" onclick="document.getElementById('apikey-modal').style.display='none'"
+            style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#666;">&times;</button>
+    <h2 style="margin:0 0 1rem;font-size:1.1rem;">🔑 Update API Key</h2>
+    <form method="post" action="{{ url_for('admin_update_apikey') }}">
+      <input type="password" name="api_key" placeholder="Paste new API key here" required autofocus
+             style="width:100%;padding:0.5rem 0.7rem;border-radius:8px;border:1px solid #ccc;font-size:0.95rem;margin-bottom:0.9rem;">
+      <button type="submit" class="btn-primary" style="width:100%;">Save Key</button>
+    </form>
+  </div>
 </div>
 </body>
 </html>

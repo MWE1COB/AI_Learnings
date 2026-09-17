@@ -317,6 +317,15 @@ body::after {
 .admin-table tbody tr:hover { background: #f0f0ff; }
 .admin-table .empty { text-align: center; color: #999; padding: 40px; }
 
+.flash { padding: 10px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 0.93rem; font-weight: 500; }
+.flash-success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.flash-error { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.rank-gold  { background: #fefce8 !important; font-weight: 600; }
+.rank-silver{ background: #f1f5f9 !important; font-weight: 600; }
+.rank-bronze{ background: #fff7ed !important; font-weight: 600; }
+.btn-reset { background: none; border: 1px solid #e11d48; color: #e11d48; border-radius: 6px; padding: 3px 10px; font-size: 0.82rem; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.btn-reset:hover { background: #fee2e2; }
+
 .page-center-top {
   flex-direction: column;
   align-items: center;

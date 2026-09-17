@@ -17,7 +17,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 
 # Reuse the AI question generator + timer config from the main project.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from quiz_engine import generate_quiz_with_ai, generate_questions_from_docs, GENAI_AVAILABLE, PASS_PERCENTAGE  # noqa: E402
+from quiz_engine import generate_mixed_ai_questions, generate_mixed_doc_questions, _question_hash, GENAI_AVAILABLE, PASS_PERCENTAGE  # noqa: E402
 from database import SKILL_LEVELS  # noqa: E402
 from runtime_paths import app_dir  # noqa: E402
 
@@ -103,36 +103,24 @@ def home():
         if errors:
             return render_template("home.html", errors=errors, form=request.form)
 
+        if quiz_store.ntid_has_attempted(ntid):
+            errors["ntid"] = "🚫 Sneaky! This NTID already took the quiz. One shot, one chance — no second bites!"
+            return render_template("home.html", errors=errors, form=request.form)
+
         sid = str(uuid.uuid4())
-        _SESSIONS[sid] = {"name": name, "ntid": ntid, "topic": random.choice(AI_TOPICS)}
+        # level=0 is a sentinel meaning "mixed" — no user selection needed
+        _SESSIONS[sid] = {"name": name, "ntid": ntid, "topic": random.choice(AI_TOPICS), "level": 0}
         session["sid"] = sid
-        return redirect(url_for("level"))
+        return redirect(url_for("loading"))
 
     session.pop("sid", None)
     return render_template("home.html", errors={}, form={})
 
 
-@app.route("/level", methods=["GET", "POST"])
-def level():
-    qs = _get_quiz_session()
-    if qs is None or "topic" not in qs:
-        return redirect(url_for("home"))
-
-    if request.method == "POST":
-        level_id = request.form.get("level")
-        if level_id not in ("1", "2", "3", "4"):
-            flash("Please select a valid level.")
-            return redirect(url_for("level"))
-        qs["level"] = int(level_id)
-        return redirect(url_for("loading"))
-
-    return render_template("level.html", levels=SKILL_LEVELS, user=qs)
-
-
 @app.route("/loading")
 def loading():
     qs = _get_quiz_session()
-    if qs is None or "level" not in qs:
+    if qs is None or "topic" not in qs:
         return redirect(url_for("home"))
     return render_template("waiting.html", user=qs)
 
@@ -141,7 +129,7 @@ def loading():
 def generate():
     """Called by the waiting page via fetch(); generates questions then signals ready."""
     qs = _get_quiz_session()
-    if qs is None or "level" not in qs:
+    if qs is None or "topic" not in qs:
         return {"ok": False, "error": "session expired"}, 400
 
     if not GENAI_AVAILABLE:
@@ -152,25 +140,20 @@ def generate():
     ai_error = doc_error = None
 
     def _gen_ai():
-        nonlocal ai_questions, ai_error
+        nonlocal ai_error
         try:
-            ai_questions = generate_quiz_with_ai(
-                qs["topic"], qs["level"], AI_QUESTIONS, single_batch=True
-            )
+            ai_questions.extend(generate_mixed_ai_questions(qs["topic"], AI_QUESTIONS))
         except Exception as exc:  # noqa: BLE001
             ai_error = exc
 
     def _gen_doc():
-        nonlocal doc_questions, doc_error
+        nonlocal doc_error
         try:
-            # No ai_stems yet (parallel); dedup against AI batch after both join
-            doc_questions = generate_questions_from_docs(
-                DOCUMENTS_DIR, qs["level"], DOC_QUESTIONS
-            )
+            doc_questions.extend(generate_mixed_doc_questions(DOCUMENTS_DIR, DOC_QUESTIONS))
         except Exception as exc:  # noqa: BLE001
             doc_error = exc
 
-    # Run both generators in parallel — halves wall-clock time to ~one request's latency
+    # 2 parallel calls — one to AI general knowledge, one grounded in docs
     ai_thread = threading.Thread(target=_gen_ai)
     doc_thread = threading.Thread(target=_gen_doc)
     ai_thread.start()
@@ -179,14 +162,11 @@ def generate():
     doc_thread.join()
 
     if ai_error and doc_error:
-        return {"ok": False, "error": f"AI questions: {ai_error}; Doc questions: {doc_error}"}, 500
+        return {"ok": False, "error": str(ai_error)}, 500
     if ai_error:
         return {"ok": False, "error": str(ai_error)}, 500
-    if doc_error:
-        return {"ok": False, "error": str(doc_error)}, 500
 
-    # Drop any doc question whose text closely matches an AI question
-    from quiz_engine import _question_hash  # noqa: PLC0415
+    # Dedup doc questions against AI questions
     ai_hashes = {_question_hash(q["question"]) for q in ai_questions}
     doc_questions = [q for q in doc_questions if _question_hash(q["question"]) not in ai_hashes]
 
@@ -210,7 +190,7 @@ def quiz():
         questions=qs["questions"],
         duration_sec=qs["duration_sec"],
         per_question_sec=PER_QUESTION_SEC,
-        level_name=SKILL_LEVELS.get(qs["level"], "Beginner"),
+        level_name="Mixed",
     )
 
 
@@ -238,10 +218,9 @@ def submit():
         })
 
     duration = int(time.time() - qs.get("start_time", time.time()))
-    level_name = SKILL_LEVELS.get(qs["level"], "Beginner")
 
     record = quiz_store.save_attempt(
-        qs["name"], qs["ntid"], qs["topic"], level_name,
+        qs["name"], qs["ntid"], qs["topic"], "Mixed",
         score, len(questions), duration,
     )
 
@@ -291,7 +270,33 @@ def admin_logout():
 @admin_required
 def admin():
     attempts = quiz_store.get_all_attempts()
+    # highest percentage first; tie-break on shorter duration
+    attempts.sort(key=lambda a: (-a["percentage"], a["duration_sec"]))
     return render_template("admin.html", attempts=attempts)
+
+
+@app.route("/admin/reset/<ntid>", methods=["POST"])
+@admin_required
+def admin_reset_attempt(ntid):
+    quiz_store.delete_attempt_by_ntid(ntid)
+    flash(f"Attempt for NTID '{ntid}' has been reset. They may now retake the quiz.", "success")
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/apikey", methods=["POST"])
+@admin_required
+def admin_update_apikey():
+    new_key = request.form.get("api_key", "").strip()
+    if not new_key:
+        flash("API key cannot be empty.", "error")
+        return redirect(url_for("admin"))
+    try:
+        from quiz_engine import persist_api_key  # noqa: PLC0415
+        persist_api_key(new_key)
+        flash("API key updated and saved successfully.", "success")
+    except Exception as exc:  # noqa: BLE001
+        flash(f"Failed to save API key: {exc}", "error")
+    return redirect(url_for("admin"))
 
 
 @app.route("/admin/download")

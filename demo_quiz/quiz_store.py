@@ -126,6 +126,34 @@ def get_all_attempts():
     return attempts
 
 
+def ntid_has_attempted(ntid):
+    """Return True if the NTID already has a recorded attempt."""
+    _ensure_workbook()
+    with _lock:
+        wb = _read_workbook()
+        ws = wb["Results"]
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if row and str(row[1]).strip().lower() == ntid.strip().lower():
+                return True
+    return False
+
+
+def delete_attempt_by_ntid(ntid):
+    """Remove all rows for the given NTID (allows a re-attempt)."""
+    _ensure_workbook()
+    with _lock:
+        wb = _read_workbook()
+        ws = wb["Results"]
+        rows_to_keep = [list(ws[1])]  # keep header
+        for row in ws.iter_rows(min_row=2):
+            if str(row[1].value).strip().lower() != ntid.strip().lower():
+                rows_to_keep.append([cell.value for cell in row])
+        ws.delete_rows(1, ws.max_row)
+        for row in rows_to_keep:
+            ws.append([c if isinstance(c, (str, int, float, type(None))) else c for c in row])
+        _write_workbook(wb)
+
+
 def export_encrypted(password):
     """Return the workbook bytes password-protected so only someone with the
     export password (i.e. the admin) can open it in Excel.

@@ -26,14 +26,7 @@
       {{ 'PASSED ✓' if record.passed else 'FAILED ✗' }} &middot; need {{ pass_percentage }}% to pass
     </span>
     <p class="subtitle">{{ record.name }} scored <strong>{{ record.score }}/{{ record.total }}</strong></p>
-    <p class="subtitle">Level attempted: <strong>{{ record.level }}</strong></p>
-    {% if record.passed and record.next_level %}
-    <p class="subtitle next-level-tip">🚀 Great job! You're ready for the next level: <strong>{{ record.next_level }}</strong></p>
-    {% elif record.passed %}
-    <p class="subtitle next-level-tip">🌟 You've mastered the highest level for this topic!</p>
-    {% else %}
-    <p class="subtitle">Keep practicing and try the <strong>{{ record.level }}</strong> level again to pass.</p>
-    {% endif %}
+    <p class="subtitle">Format: <strong>Mixed Levels</strong> (Beginner → Expert + Real-Time Scenarios)</p>
     <p class="subtitle">Duration: {{ record.duration_sec }}s</p>
     {% if review %}
     <button type="button" id="view-result-btn" class="btn-primary">View Result</button>

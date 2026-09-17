@@ -269,6 +269,157 @@ def generate_quiz_with_ai(topic, level, num_questions=20, single_batch=False, do
     return final
 
 
+def generate_mixed_ai_questions(topic, num_questions=5):
+    """Generate `num_questions` MCQs in one API call with mixed difficulty levels.
+
+    Distribution for 5 questions: 1 Beginner, 1 Moderate, 1 Intermediate, 1 Expert,
+    1 Real-Time Scenario. The prompt instructs the model to label each question with
+    its intended difficulty so the single batch covers all tiers.
+    """
+    prompt = f"""Generate exactly {num_questions} multiple-choice questions for the topic "{topic}".
+Use this exact difficulty distribution (one question per level, in this order):
+1. Beginner — a foundational concept question
+2. Moderate — a scenario with a tricky edge case
+3. Intermediate — an advanced concept or design decision
+4. Expert — deep internals, performance trade-offs, or obscure real-world edge case
+5. Real-Time Scenario — a concrete, practical situation a professional might face on the job (debugging, system design, production incident, tool choice)
+
+Return ONLY a valid JSON array of exactly {num_questions} objects. No explanation, no markdown, no extra text.
+Ensure all strings are properly JSON-escaped.
+
+Each object must have:
+- "type": "mcq"
+- "question": the question text
+- "options": array of exactly 4 plausible answer options
+- "answer": index (0-3) of the correct answer
+
+Example:
+[
+  {{"type": "mcq", "question": "What is X?", "options": ["A", "B", "C", "D"], "answer": 0}}
+]
+"""
+    max_tokens = max(300, num_questions * 350)
+    text = _call_aoai([{"role": "user", "content": prompt}], max_tokens=max_tokens).strip()
+    questions = _parse_questions_json(text)
+    validated = []
+    for q in questions:
+        q["type"] = "mcq"
+        if all(k in q for k in ("question", "options", "answer")):
+            if isinstance(q["options"], list) and len(q["options"]) == 4:
+                if isinstance(q["answer"], int) and 0 <= q["answer"] <= 3:
+                    validated.append(q)
+    return validated
+
+
+def generate_mixed_doc_questions(documents_dir, num_questions=5):
+    """Generate `num_questions` MCQs from docs in one API call with mixed difficulty."""
+    combined_text = _extract_all_docs_text(documents_dir)
+    if not combined_text:
+        return []
+    prompt = f"""Generate exactly {num_questions} multiple-choice questions grounded in the reference material below.
+Use this exact difficulty distribution (one question per level, in this order):
+1. Beginner — a foundational concept from the material
+2. Moderate — a scenario with a tricky edge case from the material
+3. Intermediate — an advanced concept or design decision from the material
+4. Expert — deep or obscure detail from the material
+5. Real-Time Scenario — a concrete practical situation based on the material
+
+REFERENCE MATERIAL:
+\"\"\"
+{combined_text[:4000]}
+\"\"\"
+
+Return ONLY a valid JSON array of exactly {num_questions} objects. No explanation, no markdown, no extra text.
+Ensure all strings are properly JSON-escaped.
+
+Each object must have:
+- "type": "mcq"
+- "question": the question text
+- "options": array of exactly 4 plausible answer options
+- "answer": index (0-3) of the correct answer
+"""
+    max_tokens = max(300, num_questions * 350)
+    text = _call_aoai([{"role": "user", "content": prompt}], max_tokens=max_tokens).strip()
+    questions = _parse_questions_json(text)
+    validated = []
+    for q in questions:
+        q["type"] = "mcq"
+        if all(k in q for k in ("question", "options", "answer")):
+            if isinstance(q["options"], list) and len(q["options"]) == 4:
+                if isinstance(q["answer"], int) and 0 <= q["answer"] <= 3:
+                    validated.append(q)
+    return validated
+
+
+def generate_realtime_scenario_questions(topic, num_questions=2):
+    """Generate real-world scenario-based MCQ questions for `topic`."""
+    prompt = f"""Generate exactly {num_questions} real-time scenario-based multiple-choice questions for the topic "{topic}".
+
+Each question must describe a concrete, realistic situation a practitioner might face (e.g. debugging, system design decision, production incident, choosing the right tool). The question should require applying knowledge, not just recalling facts.
+
+Return ONLY a valid JSON array. No explanation, no markdown, no extra text.
+Ensure all strings are properly JSON-escaped.
+
+Each question must have:
+- "type": "mcq"
+- "question": the scenario question text
+- "options": array of exactly 4 answer options (make distractors plausible)
+- "answer": index (0-3) of the correct answer
+
+Example:
+[
+  {{"type": "mcq", "question": "Your RAG pipeline returns stale answers after documents are updated. What is the most likely cause?", "options": ["Embedding model changed", "Index not refreshed after document update", "Retriever top-k set too low", "LLM context window exceeded"], "answer": 1}}
+]
+"""
+    max_tokens = min(1500, max(300, num_questions * 180))
+    text = _call_aoai([{"role": "user", "content": prompt}], max_tokens=max_tokens).strip()
+    questions = _parse_questions_json(text)
+    validated = []
+    for q in questions:
+        q["type"] = "mcq"
+        if all(k in q for k in ("question", "options", "answer")):
+            if isinstance(q["options"], list) and len(q["options"]) == 4:
+                if isinstance(q["answer"], int) and 0 <= q["answer"] <= 3:
+                    validated.append(q)
+    return validated
+
+
+def generate_realtime_scenario_questions_from_docs(documents_dir, num_questions=1):
+    """Generate real-time scenario MCQs grounded in the PDFs in documents_dir."""
+    combined_text = _extract_all_docs_text(documents_dir)
+    if not combined_text:
+        return []
+    prompt = f"""Generate exactly {num_questions} real-time scenario-based multiple-choice questions grounded in the reference material below.
+
+Each question must describe a realistic, practical situation a professional might face. Require applied thinking, not just recall.
+
+REFERENCE MATERIAL:
+\"\"\"
+{combined_text[:3000]}
+\"\"\"
+
+Return ONLY a valid JSON array. No explanation, no markdown, no extra text.
+Ensure all strings are properly JSON-escaped.
+
+Each question must have:
+- "type": "mcq"
+- "question": the scenario question text
+- "options": array of exactly 4 plausible answer options
+- "answer": index (0-3) of the correct answer
+"""
+    max_tokens = min(1500, max(300, num_questions * 180))
+    text = _call_aoai([{"role": "user", "content": prompt}], max_tokens=max_tokens).strip()
+    questions = _parse_questions_json(text)
+    validated = []
+    for q in questions:
+        q["type"] = "mcq"
+        if all(k in q for k in ("question", "options", "answer")):
+            if isinstance(q["options"], list) and len(q["options"]) == 4:
+                if isinstance(q["answer"], int) and 0 <= q["answer"] <= 3:
+                    validated.append(q)
+    return validated
+
+
 def _normalize_question_text(text):
     """Collapse case/punctuation/whitespace differences so near-identical
     questions hash the same way."""
