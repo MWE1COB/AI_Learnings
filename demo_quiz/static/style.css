@@ -87,6 +87,66 @@ body::after {
   100% { transform: translateY(-110vh) translateX(30px); opacity: 0; }
 }
 
+.floating-robots {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.floating-robots .robot {
+  position: absolute;
+  font-size: 46px;
+  opacity: 0.85;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.25));
+  animation: robotDrift 14s ease-in-out infinite, robotSpin 6s ease-in-out infinite;
+}
+.robot-1 { top: 12%;  left: 8%;  font-size: 56px; animation-duration: 16s, 7s; }
+.robot-2 { top: 68%;  left: 5%;  font-size: 40px; animation-duration: 12s, 5s; animation-delay: -3s, 0s; }
+.robot-3 { top: 20%;  right: 9%; font-size: 60px; animation-duration: 18s, 8s; animation-delay: -6s, 0s; }
+.robot-4 { top: 78%;  right: 14%; font-size: 34px; animation-duration: 10s, 4s; animation-delay: -2s, 0s; }
+.robot-5 { top: 45%;  right: 4%;  font-size: 38px; animation-duration: 15s, 6s; animation-delay: -8s, 0s; }
+.robot-6 { top: 5%;   left: 45%;  font-size: 30px; animation-duration: 13s, 5s; animation-delay: -4s, 0s; }
+@keyframes robotDrift {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(18px, -22px); }
+  50% { transform: translate(-14px, 16px); }
+  75% { transform: translate(12px, 10px); }
+}
+@keyframes robotSpin {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+.hero-emoji {
+  display: block;
+  font-size: 44px;
+  margin-bottom: 6px;
+  animation: robotBounce 2.4s ease-in-out infinite;
+}
+@keyframes robotBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(-4deg); }
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 4px 0 22px;
+}
+.hero-badges .badge {
+  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+  border: 1px solid #c7d2fe;
+  color: var(--primary-dark);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
 .site-logo {
   position: fixed;
   top: 18px;

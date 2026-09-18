@@ -8,10 +8,27 @@
 </head>
 <body>
 <img class="site-logo" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
+
+<!-- Floating AI robot mascots drifting across the hero background -->
+<div class="floating-robots" aria-hidden="true">
+  <span class="robot robot-1">🤖</span>
+  <span class="robot robot-2">🦾</span>
+  <span class="robot robot-3">🤖</span>
+  <span class="robot robot-4">✨</span>
+  <span class="robot robot-5">🧠</span>
+  <span class="robot robot-6">🤖</span>
+</div>
+
 <div class="page-center">
   <div class="card fade-in">
-    <h1 class="title">🧠 Brain Tickle Challenge!</h1>
-    <p class="subtitle">Warning: may cause brain-flexing and bragging rights. Enter your details to jump in!</p>
+    <span class="hero-emoji">🤖</span>
+    <h1 class="title">Brain Tickle Challenge!</h1>
+    <p class="subtitle">Think you can outsmart the AI? Sharpen your mind, race the clock and climb the leaderboard!</p>
+    <div class="hero-badges">
+      <span class="badge">🤖 AI-Powered</span>
+      <span class="badge">⚡ Fast &amp; Fun</span>
+      <span class="badge">🏆 Beat the Leaderboard</span>
+    </div>
     <form method="post" novalidate>
       <div class="field">
         <label>Name *</label>
@@ -23,7 +40,7 @@
         <input type="text" name="ntid" value="{{ form.get('ntid', '') }}" placeholder="e.g. abc1cob" required>
         {% if errors.get('ntid') %}<div class="error">{{ errors['ntid'] }}</div>{% endif %}
       </div>
-      <button type="submit" class="btn-primary">Continue →</button>
+      <button type="submit" class="btn-primary">Let's Go 🚀</button>
     </form>
   </div>
 </div>
