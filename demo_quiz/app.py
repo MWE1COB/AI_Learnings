@@ -165,6 +165,8 @@ def generate():
         return {"ok": False, "error": str(ai_error)}, 500
     if ai_error:
         return {"ok": False, "error": str(ai_error)}, 500
+    if doc_error:
+        return {"ok": False, "error": f"Doc questions failed: {doc_error}"}, 500
 
     # Dedup doc questions against AI questions
     ai_hashes = {_question_hash(q["question"]) for q in ai_questions}

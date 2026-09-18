@@ -548,14 +548,14 @@ def _parse_questions_json(text):
     return questions
 
 
-def _extract_all_docs_text(documents_dir, max_chars_per_doc=3000):
-    """Return combined text from every PDF in documents_dir (each capped separately)."""
+def _extract_all_docs_text(documents_dir, max_chars_per_doc=3000, max_docs=5):
+    """Return combined text from a random sample of PDFs in documents_dir."""
     if PdfReader is None or not documents_dir or not os.path.isdir(documents_dir):
         return ""
+    all_pdfs = [f for f in os.listdir(documents_dir) if f.lower().endswith(".pdf")]
+    sampled = random.sample(all_pdfs, min(max_docs, len(all_pdfs)))
     parts = []
-    for fname in sorted(os.listdir(documents_dir)):
-        if not fname.lower().endswith(".pdf"):
-            continue
+    for fname in sampled:
         path = os.path.join(documents_dir, fname)
         text = _extract_pdf_text(path, max_chars=max_chars_per_doc)
         if text:
