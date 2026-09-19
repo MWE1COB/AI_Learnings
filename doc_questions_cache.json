@@ -1,0 +1,442 @@
+[
+  {
+    "type": "mcq",
+    "question": "What is the focus of the XC-CP Clean Coding Guidelines Extension?",
+    "options": [
+      "Enhancing user interface design",
+      "Simplifying coding review processes",
+      "Increasing project management efficiency",
+      "Improving database structures"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "In what way does the UT Chat for Cantata aim to improve current unit testing workflows?",
+    "options": [
+      "By increasing manual coding requirements",
+      "By automating test result reporting",
+      "By encouraging fragmented testing processes",
+      "By eliminating the need for documentation"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "How does the RTG Requirement driven Test Generator enhance test design automation?",
+    "options": [
+      "By randomizing test cases",
+      "By aligning test generation with software requirements",
+      "By reducing the number of testing requirements",
+      "By focusing solely on manual test creation"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What is one potential challenge that could arise with the automation of software integration test case design?",
+    "options": [
+      "Increased human oversight",
+      "Improved test specification consistency",
+      "Possible neglect of edge case coverage",
+      "Lower error rates in manual testing"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "What does the IRIS system help prevent in issue and defect management?",
+    "options": [
+      "Biased issue reporting",
+      "Duplicate issue creation",
+      "Overlapping testing efforts",
+      "Underdocumentation of defects"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "If a team is experiencing delays due to manual analysis of JIRA defects, which AI-driven solution could they implement?",
+    "options": [
+      "E2E system test intelligence",
+      "Automatic JIRA defect ticket management system",
+      "XC-CP Clean Coding Guidelines Extension",
+      "UT Chat for Cantata"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What is an essential benefit of the Intelligent Defect & Issue Management systems mentioned?",
+    "options": [
+      "They don't require any manual intervention",
+      "They automatically generate documentation",
+      "They improve defect quality and reuse",
+      "They reduce the number of team members needed"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "Which aspect of manual test specification creation is addressed by the automation feature?",
+    "options": [
+      "It increases variability in test formats",
+      "It guarantees delay-free report generation",
+      "It minimizes the time and human error involved",
+      "It solely focuses on integration tests"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "In a scenario where a developer struggles with incomplete test coverage due to errors, which product will directly assist in improving their situation?",
+    "options": [
+      "XC-CP Clean Coding Guidelines Extension",
+      "Automation of Software Integration Test Case Design Generation",
+      "UT Chat for Cantata",
+      "IRIS Issue Repository"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What primary use case does the E2E system test intelligence focus on?",
+    "options": [
+      "Integrating complex databases",
+      "Enhancing user experience designs",
+      "Facilitating intelligent testing and validation",
+      "Simplifying project management tasks"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "What is the primary purpose of the XC-CP Clean Coding Guidelines Extension?",
+    "options": [
+      "To create new coding languages",
+      "To simplify review of clean-coding rules",
+      "To automate coding completely",
+      "To enforce strict coding standards"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "In which situation would the UT Chat for Cantata be most beneficial?",
+    "options": [
+      "When engineers have minimal testing requirements",
+      "When testing workflows are highly manual and fragmented",
+      "When coding begins from scratch",
+      "When documentation has already been completed"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What does the RTG Requirement driven Test Generator accomplish?",
+    "options": [
+      "Generates boilerplate code for applications",
+      "Creates tests directly from requirements",
+      "Automates coding languages",
+      "Provides final reports to engineers"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "Which AI theme primarily focuses on eliminating duplicate issues?",
+    "options": [
+      "AI-Driven Code Quality, Review & Compliance",
+      "Intelligent Testing & Validation",
+      "Intelligent Defect & Issue Management",
+      "Software Integration Automation"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "What problem does the automation of Software Integration Test Case Design Generation specifically address?",
+    "options": [
+      "Test case generation for non-complex scenarios",
+      "Manual test specification creation",
+      "Coding language comprehension",
+      "Improving user interface design"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What leads to incomplete test coverage as highlighted in the reference material?",
+    "options": [
+      "Automated testing protocols",
+      "Manual and error-prone test specification",
+      "Clear documentation processes",
+      "Agile development practices"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "Which aspect of the IRIS system improves issue quality?",
+    "options": [
+      "Reduces coding standards",
+      "Prevents duplicate issue creation",
+      "Increases manual testing",
+      "Enhances user interface"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "The problem statement regarding JIRA defect ticket management primarily addresses which issue?",
+    "options": [
+      "Defect documentation",
+      "Manual analysis time consumption",
+      "Data corruption during analysis",
+      "Automated coding efficiency"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "Why might test specifications vary in quality without automation as noted in the material?",
+    "options": [
+      "Automated tools arenâ€™t necessary",
+      "Manual creation is prone to inconsistencies",
+      "All projects follow the same format",
+      "Standard quality is inherently maintained"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What is a practical application of the UT Chat for Cantata in a real-time scenario?",
+    "options": [
+      "Setting up a complete development environment",
+      "Creating boilerplate code with a single click",
+      "Automating test cycles to improve efficiency",
+      "Finalizing project documentation after completion"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "What is the main focus of the XC-CP Clean Coding Guidelines Extension exhibit?",
+    "options": [
+      "Automating defect tracking",
+      "Simplifying review against clean-coding rules",
+      "Creating unit tests",
+      "Enhancing user experience"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "Which scenario best describes a challenge faced in the current Unit Testing workflows?",
+    "options": [
+      "Unit tests are always fully automated.",
+      "Engineers face no issues in test reporting.",
+      "Workflows are fragmented and highly manual.",
+      "Unit tests always have complete coverage."
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "What does the RTG Requirement driven Test Generator primarily target?",
+    "options": [
+      "Issue management",
+      "Test automation from requirements",
+      "Code quality reviewing",
+      "User acceptance testing"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "In the context of the issue repository, which problem does the IRIS exhibit aim to prevent?",
+    "options": [
+      "Low code quality",
+      "Duplicate issue creation",
+      "Slow testing cycles",
+      "Inconsistent documentation"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What is the primary purpose of automating software integration test case design generation as per the relevant exhibit?",
+    "options": [
+      "To reduce manual testing entirely",
+      "To improve coverage and consistency",
+      "To replace all existing test frameworks",
+      "To simplify user interface design"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "Which type of defects does the Automatic JIRA defect ticket management system specifically target?",
+    "options": [
+      "User interface bugs",
+      "Performance issues",
+      "Manual analysis time reduction",
+      "API integration errors"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "What is a significant risk associated with manual test specification creation?",
+    "options": [
+      "High quality test coverage",
+      "Increased productivity",
+      "Repetitiveness and human errors",
+      "Standardized test environments"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "Which AI theme is primarily associated with the end-to-end system test intelligence?",
+    "options": [
+      "Intelligent Defect & Issue Management",
+      "AI-Driven Code Quality, Review & Compliance",
+      "Intelligent Testing & Validation",
+      "Automated UI Testing"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "If an engineer is using the intelligent defect and issue management approach, what should they expect in terms of issue quality?",
+    "options": [
+      "Lower defect quality due to automation",
+      "Higher chance of new issues",
+      "Improved defect/issue quality and reuse",
+      "No impact on existing workflows"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "In an agile development scenario, how could the challenges in unit testing workflows affect time-to-market?",
+    "options": [
+      "No effect at all",
+      "They could speed up the process",
+      "They could significantly delay it",
+      "They only affect product quality"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "What is the primary focus of the XC-CP Clean Coding Guidelines Extension?",
+    "options": [
+      "To automate the creation of test cases",
+      "To simplify code review against clean-coding rules",
+      "To manage JIRA defect tickets more efficiently",
+      "To generate tests directly from requirements"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "In the context of unit testing workflows, what is a significant issue that engineers face according to the UT Chat for Cantata exhibit?",
+    "options": [
+      "Testing is always automated",
+      "Setup tasks are fragmented and slow",
+      "Tests can be conducted without any requirements",
+      "Documentation is generated instantly"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "How does the RTG Requirement driven Test Generator enhance test design?",
+    "options": [
+      "By automating code compilation",
+      "By generating tests from software requirements",
+      "By minimizing human interaction",
+      "By standardizing coding practices"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What is an intelligent feature of the issue repository utilized in the IRIS system?",
+    "options": [
+      "It accelerates software integration",
+      "It prevents duplicate issue creation",
+      "It analyzes code quality",
+      "It enhances manual test specification"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What problem does the Automation of Software Integration Test Case Design Generation aim to solve?",
+    "options": [
+      "Increased programming errors",
+      "Time-consuming manual creation of test specifications",
+      "Duplicity in issue records",
+      "Ineffective test reporting"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "When using the Automatic JIRA defect ticket management system, what significant benefit is highlighted?",
+    "options": [
+      "Manual ticket management becomes quicker",
+      "Summaries of tickets are generated automatically",
+      "All defects are resolved instantly",
+      "Problem managers do not need to analyze tickets anymore"
+    ],
+    "answer": 1
+  },
+  {
+    "type": "mcq",
+    "question": "What overarching theme encompasses intelligent testing and validation for E2E system tests?",
+    "options": [
+      "AI-driven code quality",
+      "Test design automation",
+      "End-to-end system-test intelligence",
+      "Automated JIRA management"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "Why is manual test specification creation problematic in software integration?",
+    "options": [
+      "It guarantees perfect test coverage",
+      "It allows for the fastest testing cycles",
+      "It is consistent across projects",
+      "It is error-prone and time-consuming"
+    ],
+    "answer": 3
+  },
+  {
+    "type": "mcq",
+    "question": "In intelligent defect management, what role does the JIRA system primarily serve?",
+    "options": [
+      "Creating new software requirements",
+      "Balancing coding standards",
+      "Managing and summarizing defect tickets",
+      "Conducting automated tests"
+    ],
+    "answer": 2
+  },
+  {
+    "type": "mcq",
+    "question": "A developer has reported that their unit testing process takes too long due to repetitiveness. Which AI theme would best address this issue?",
+    "options": [
+      "Intelligent Testing & Validation",
+      "AI-Driven Code Quality, Review & Compliance",
+      "Intelligent Defect & Issue Management",
+      "End-to-end system-test intelligence"
+    ],
+    "answer": 0
+  }
+]

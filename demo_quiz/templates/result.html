@@ -2,67 +2,101 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Your Result</title>
+<title>Your Result — {{ record.name }}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script src="{{ url_for('static', filename='particles.js') }}" defer></script>
 </head>
 <body>
-<img class="site-logo" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
-<div class="page-center">
-  <div class="card fade-in{% if record.passed %} celebrate{% endif %}">
-    {% if record.passed %}
-    <h1 class="title">🏆 Congratulations</h1>
-    {% else %}
-    <h1 class="title">Brain Tickle Challenge completed!</h1>
-    {% endif %}
-    <div class="score-ring">
+<div id="bg-particles" class="bg-particles"></div>
+
+<header class="result-header">
+  <span class="result-header-name">👤 {{ record.name }}</span>
+  <img class="site-logo site-logo-inline" src="{{ url_for('static', filename='bosch_logo.png') }}" alt="Bosch">
+</header>
+
+<div class="result-stage">
+
+  <!-- Central result card -->
+  <div class="result-card result-card-enter" id="result-card">
+
+    <div class="result-title-row">
+      {% if record.passed %}
+      <h1 class="result-title">Congratulations! 🎉</h1>
+      {% else %}
+      <h1 class="result-title">Challenge Complete!</h1>
+      {% endif %}
+      <p class="result-topic">{{ record.topic }}</p>
+    </div>
+
+    <!-- Score ring -->
+    <div class="score-ring result-ring">
       <svg viewBox="0 0 120 120">
         <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
         <circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52"></circle>
       </svg>
       <div class="score-text" id="score-text">0%</div>
     </div>
-    <span class="status-badge {{ 'pass' if record.passed else 'fail' }}">
-      {{ 'PASSED ✓' if record.passed else 'FAILED ✗' }} &middot; need {{ pass_percentage }}% to pass
-    </span>
-    <p class="subtitle">{{ record.name }} scored <strong>{{ record.score }}/{{ record.total }}</strong></p>
-    <p class="subtitle">Format: <strong>Mixed Levels</strong> (Beginner → Expert + Real-Time Scenarios)</p>
-    <p class="subtitle">Duration: {{ record.duration_sec }}s</p>
-    {% if review %}
-    <button type="button" id="view-result-btn" class="btn-primary">View Result</button>
-    {% endif %}
-    <a href="{{ url_for('home') }}" class="btn-primary">Take Another Quiz</a>
-  </div>
 
-  {% if review %}
-  <div class="modal-overlay" id="review-overlay">
-    <div class="card fade-in review-card" id="review-card">
-      <button type="button" class="modal-close" id="review-close" aria-label="Close">&times;</button>
-      <h2 class="title" style="font-size: 1.3em;">Answer Review</h2>
-      {% for r in review %}
-      <div class="question-card">
-        <div class="question-text">{{ loop.index }}. {{ r.question }}</div>
-        <div class="options">
-          {% for opt in r.options %}
-          <div class="option{% if loop.index0 == r.correct_answer %} correct-answer{% elif loop.index0 == r.selected_answer %} wrong-answer{% endif %}">
-            <span>{{ opt }}</span>
-            {% if loop.index0 == r.correct_answer %}<span class="answer-tag">✓ Correct answer</span>{% endif %}
-            {% if loop.index0 == r.selected_answer and not r.is_correct %}<span class="answer-tag">✗ Your answer</span>{% endif %}
-          </div>
-          {% endfor %}
-        </div>
-        {% if r.selected_answer is none %}
-        <p class="subtitle" style="color:#d32f2f;">You did not answer this question.</p>
-        {% endif %}
+    <!-- Tier badge -->
+    <span class="status-badge" id="score-badge"></span>
+
+    <!-- Stat pills -->
+    <div class="result-stats">
+      <div class="result-stat">
+        <span class="result-stat-icon">✅</span>
+        <span class="result-stat-val">{{ record.score }}/{{ record.total }}</span>
+        <span class="result-stat-lbl">Score</span>
       </div>
-      {% endfor %}
+      <div class="result-stat">
+        <span class="result-stat-icon">⏱️</span>
+        <span class="result-stat-val">{{ '%d:%02d' | format(record.duration_sec // 60, record.duration_sec % 60) }}</span>
+        <span class="result-stat-lbl">Time</span>
+      </div>
+      <div class="result-stat">
+        <span class="result-stat-icon">🎯</span>
+        <span class="result-stat-val">{{ record.percentage }}%</span>
+        <span class="result-stat-lbl">Accuracy</span>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      {% if review %}
+      <button type="button" id="view-result-btn" class="btn-primary">View Answers</button>
+      {% endif %}
+      <a href="{{ url_for('home') }}" class="btn-outline">Play Again</a>
     </div>
   </div>
-  {% endif %}
+
 </div>
-{% if record.passed %}
-<canvas id="confetti-canvas"></canvas>
+
+<!-- Review modal -->
+{% if review %}
+<div class="modal-overlay" id="review-overlay">
+  <div class="card fade-in review-card" id="review-card">
+    <button type="button" class="modal-close" id="review-close" aria-label="Close">&times;</button>
+    <h2 class="title" style="font-size:1.3em;">Answer Review</h2>
+    {% for r in review %}
+    <div class="question-card">
+      <div class="question-text">{{ loop.index }}. {{ r.question }}</div>
+      <div class="options">
+        {% for opt in r.options %}
+        <div class="option{% if loop.index0 == r.correct_answer %} correct-answer{% elif loop.index0 == r.selected_answer %} wrong-answer{% endif %}">
+          <span>{{ opt }}</span>
+          {% if loop.index0 == r.correct_answer %}<span class="answer-tag">✓ Correct answer</span>{% endif %}
+          {% if loop.index0 == r.selected_answer and not r.is_correct %}<span class="answer-tag">✗ Your answer</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if r.selected_answer is none %}
+      <p class="subtitle" style="color:#d32f2f;">You did not answer this question.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
 {% endif %}
+
+<canvas id="confetti-canvas"></canvas>
 <script>
 const pct = {{ record.percentage }};
 const ring = document.getElementById('ring-fg');
@@ -80,6 +114,29 @@ const step = () => {
   if (current < pct) requestAnimationFrame(step);
 };
 requestAnimationFrame(step);
+
+// Animated score-tier badge — label + emoji driven by final percentage.
+const TIERS = [
+  { min: 0,  label: "Keep Exploring",       emoji: "🌱", cls: "tier-0" },
+  { min: 10, label: "Just Getting Started", emoji: "🐣", cls: "tier-1" },
+  { min: 20, label: "Curious Mind",         emoji: "🔍", cls: "tier-2" },
+  { min: 30, label: "Rising Star",          emoji: "⭐", cls: "tier-3" },
+  { min: 40, label: "Getting There",        emoji: "🚀", cls: "tier-4" },
+  { min: 50, label: "Halfway Hero",         emoji: "🦾", cls: "tier-5" },
+  { min: 60, label: "Sharp Thinker",        emoji: "🧠", cls: "tier-6" },
+  { min: 70, label: "Knowledge Ninja",      emoji: "🥷", cls: "tier-7" },
+  { min: 80, label: "AI Ace",               emoji: "🏅", cls: "tier-8" },
+  { min: 90, label: "Genius Mode",          emoji: "🏆", cls: "tier-9" },
+];
+const badge = document.getElementById('score-badge');
+const tier = [...TIERS].reverse().find(t => pct >= t.min) || TIERS[0];
+badge.classList.add(tier.cls);
+badge.innerHTML = `<span class="badge-emoji">${tier.emoji}</span><span class="badge-label">${tier.label}</span>`;
+setTimeout(() => badge.classList.add('badge-pop'), 50);
+
+// Tint the score ring to match the tier colour.
+const TIER_COLORS = ['#ef4444','#f97316','#eab308','#ca8a04','#22c55e','#10b981','#3b82f6','#6366f1','#8b5cf6','#7c3aed'];
+document.getElementById('ring-fg').style.stroke = TIER_COLORS[parseInt(tier.cls.slice(5))] || '#4f46e5';
 
 const viewResultBtn = document.getElementById('view-result-btn');
 const reviewOverlay = document.getElementById('review-overlay');

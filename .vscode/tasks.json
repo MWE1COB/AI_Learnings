@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build DemoQuiz EXE",
+			"type": "shell",
+			"command": "cd /c/AI_topics/AI_Learnings && pyinstaller DemoQuiz.spec --noconfirm",
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

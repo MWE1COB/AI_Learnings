@@ -17,12 +17,13 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 
 # Reuse the AI question generator + timer config from the main project.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from quiz_engine import generate_mixed_ai_questions, generate_mixed_doc_questions, _question_hash, GENAI_AVAILABLE, PASS_PERCENTAGE  # noqa: E402
+from quiz_engine import generate_mixed_ai_questions, _question_hash, GENAI_AVAILABLE, PASS_PERCENTAGE  # noqa: E402
 from database import SKILL_LEVELS  # noqa: E402
 from runtime_paths import app_dir  # noqa: E402
 
 import quiz_store
 import admin_secrets
+import doc_question_cache
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24).hex()
@@ -70,6 +71,9 @@ DOC_QUESTIONS = 5
 PER_QUESTION_SEC = 30       # each question is shown for 30 seconds max
 QUIZ_DURATION_SEC = NUM_QUESTIONS * PER_QUESTION_SEC
 DOCUMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Doc")
+
+# Start background pre-generation of Doc questions immediately at import time.
+doc_question_cache.start(DOCUMENTS_DIR)
 
 # In-memory store for in-progress quiz sessions, keyed by a server-side session id.
 # (Keeps the browser cookie small — only the session id is stored client-side.)
@@ -149,11 +153,12 @@ def generate():
     def _gen_doc():
         nonlocal doc_error
         try:
-            doc_questions.extend(generate_mixed_doc_questions(DOCUMENTS_DIR, DOC_QUESTIONS))
+            # Serve from pre-generated cache; falls back to live generation if cache is empty.
+            doc_questions.extend(doc_question_cache.get_questions(DOC_QUESTIONS))
         except Exception as exc:  # noqa: BLE001
             doc_error = exc
 
-    # 2 parallel calls — one to AI general knowledge, one grounded in docs
+    # 2 parallel calls — AI general knowledge + cached doc questions
     ai_thread = threading.Thread(target=_gen_ai)
     doc_thread = threading.Thread(target=_gen_doc)
     ai_thread.start()

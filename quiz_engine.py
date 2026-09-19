@@ -24,6 +24,11 @@ try:
 except ImportError:
     PdfReader = None  # PDF grounding disabled if pypdf isn't installed
 
+try:
+    from openpyxl import load_workbook as _xl_load_workbook
+except ImportError:
+    _xl_load_workbook = None  # xlsx extraction disabled if openpyxl isn't installed
+
 # Cache of extracted document text, keyed by (path, mtime) so repeated quiz
 # generations for the same topic don't re-parse the PDF every time.
 _DOC_TEXT_CACHE = {}
@@ -178,6 +183,35 @@ def _extract_pdf_text(path, max_chars=4000):
     except Exception:
         text = ""
 
+    _DOC_TEXT_CACHE[cache_key] = text
+    return text
+
+
+def _extract_xlsx_text(path, max_chars=4000):
+    """Extract text from an xlsx workbook, cached by (path, mtime). Returns '' on failure."""
+    if _xl_load_workbook is None:
+        return ""
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return ""
+    cache_key = (path, mtime)
+    if cache_key in _DOC_TEXT_CACHE:
+        return _DOC_TEXT_CACHE[cache_key]
+    text = ""
+    try:
+        wb = _xl_load_workbook(path, read_only=True, data_only=True)
+        rows = []
+        for ws in wb.worksheets:
+            rows.append(f"[Sheet: {ws.title}]")
+            for row in ws.iter_rows(values_only=True):
+                cells = [str(c) for c in row if c is not None and str(c).strip()]
+                if cells:
+                    rows.append("\t".join(cells))
+        text = "\n".join(rows).strip()[:max_chars]
+        wb.close()
+    except Exception:
+        text = ""
     _DOC_TEXT_CACHE[cache_key] = text
     return text
 
@@ -549,15 +583,22 @@ def _parse_questions_json(text):
 
 
 def _extract_all_docs_text(documents_dir, max_chars_per_doc=3000, max_docs=5):
-    """Return combined text from a random sample of PDFs in documents_dir."""
-    if PdfReader is None or not documents_dir or not os.path.isdir(documents_dir):
+    """Return combined text from a random sample of docs (PDF + xlsx) in documents_dir."""
+    if not documents_dir or not os.path.isdir(documents_dir):
         return ""
-    all_pdfs = [f for f in os.listdir(documents_dir) if f.lower().endswith(".pdf")]
-    sampled = random.sample(all_pdfs, min(max_docs, len(all_pdfs)))
+    supported = (".pdf", ".xlsx")
+    all_docs = [f for f in os.listdir(documents_dir)
+                if os.path.splitext(f)[1].lower() in supported
+                and not f.startswith("~$")]  # skip Office lock files
+    sampled = random.sample(all_docs, min(max_docs, len(all_docs)))
     parts = []
     for fname in sampled:
         path = os.path.join(documents_dir, fname)
-        text = _extract_pdf_text(path, max_chars=max_chars_per_doc)
+        ext = os.path.splitext(fname)[1].lower()
+        if ext == ".pdf":
+            text = _extract_pdf_text(path, max_chars=max_chars_per_doc)
+        else:
+            text = _extract_xlsx_text(path, max_chars=max_chars_per_doc)
         if text:
             stem = os.path.splitext(fname)[0]
             parts.append(f"=== {stem} ===\n{text}")
