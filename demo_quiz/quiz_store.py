@@ -155,14 +155,51 @@ def delete_attempt_by_ntid(ntid):
 
 
 def export_encrypted(password):
-    """Return the workbook bytes password-protected so only someone with the
-    export password (i.e. the admin) can open it in Excel.
-    """
+    """Return a workbook matching the dashboard view, password-protected for download."""
     _ensure_workbook()
     with _lock:
-        wb = _read_workbook()
+        raw_wb = _read_workbook()
+
+    raw_ws = raw_wb["Results"]
+    raw_header = [c.value for c in raw_ws[1]]
+
+    # Build export workbook with dashboard-aligned columns.
+    export_wb = Workbook()
+    export_ws = export_wb.active
+    export_ws.title = "Results"
+    export_headers = ["#", "Name", "NTID", "Topic", "Level", "Score", "Percentage", "Duration (mm:ss)", "Submitted At"]
+    export_ws.append(export_headers)
+
+    rows = list(raw_ws.iter_rows(min_row=2, values_only=True))
+    rows = [r for r in rows if r and r[0]]
+
+    def _get(row, col):
+        try:
+            idx = raw_header.index(col)
+            return row[idx]
+        except (ValueError, IndexError):
+            return ""
+
+    for rank, row in enumerate(rows, start=1):
+        score = _get(row, "Score")
+        total = _get(row, "Total Questions")
+        dur = _get(row, "Duration (sec)") or 0
+        score_str = f"{score}/{total}" if total else str(score)
+        dur_str = f"{int(dur) // 60}:{int(dur) % 60:02d}"
+        export_ws.append([
+            rank,
+            _get(row, "Name"),
+            _get(row, "NTID"),
+            _get(row, "Topic"),
+            _get(row, "Level"),
+            score_str,
+            _get(row, "Percentage"),
+            dur_str,
+            _get(row, "Submitted At"),
+        ])
+
     plain = io.BytesIO()
-    wb.save(plain)
+    export_wb.save(plain)
     plain.seek(0)
     encrypted = io.BytesIO()
     OOXMLFile(plain).encrypt(password, encrypted)

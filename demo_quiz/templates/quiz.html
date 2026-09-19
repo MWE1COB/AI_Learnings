@@ -24,10 +24,12 @@
   <div class="question-card" data-index="{{ loop.index0 }}">
     <div class="question-text">{{ loop.index }}. {{ q.question }}</div>
     <div class="options">
+      {% set letters = ['A','B','C','D','E','F'] %}
       {% for opt in q.options %}
-      <label class="option">
+      <label class="option option-{{ loop.index0 }}">
         <input type="radio" name="qplaceholder" value="{{ loop.index0 }}">
-        <span>{{ opt }}</span>
+        <span class="option-badge">{{ letters[loop.index0] }}</span>
+        <span class="option-text">{{ opt }}</span>
       </label>
       {% endfor %}
     </div>
@@ -79,7 +81,10 @@ function startQuestionTimer() {
 function showQuestion(idx) {
   counterEl.textContent = `Question ${idx + 1} of ${totalQuestions}`;
   cards[idx].classList.remove('exit');
-  cards[idx].classList.add('active', 'enter');
+  cards[idx].classList.add('active');
+  // Force reflow so the browser registers display:block before adding the animation class.
+  void cards[idx].offsetWidth;
+  cards[idx].classList.add('enter');
   cards[idx].addEventListener('animationend', function handler() {
     cards[idx].classList.remove('enter');
     cards[idx].removeEventListener('animationend', handler);

@@ -27,7 +27,7 @@
   <table class="admin-table">
     <thead>
       <tr>
-        <th>#</th><th>Name</th><th>NTID</th><th>Score</th><th>Percentage</th><th>Duration</th><th>Action</th>
+        <th>#</th><th>Name</th><th>NTID</th><th>Score</th><th>Percentage</th><th>Duration</th>
       </tr>
     </thead>
     <tbody>
@@ -41,15 +41,9 @@
         <td>{{ a.score }}/{{ a.total }}</td>
         <td><strong>{{ a.percentage }}%</strong></td>
         <td>{{ "%d:%02d"|format(a.duration_sec // 60, a.duration_sec % 60) }}</td>
-        <td>
-          <form method="post" action="{{ url_for('admin_reset_attempt', ntid=a.ntid) }}"
-                onsubmit="return confirm('Reset attempt for {{ a.name }} ({{ a.ntid }})? They will be able to retake the quiz.')">
-            <button type="submit" class="btn-reset">↺ Reset</button>
-          </form>
-        </td>
       </tr>
       {% else %}
-      <tr><td colspan="7" class="empty">No attempts yet.</td></tr>
+      <tr><td colspan="6" class="empty">No attempts yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
